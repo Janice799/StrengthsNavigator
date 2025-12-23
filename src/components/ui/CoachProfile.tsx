@@ -64,7 +64,7 @@ export default function CoachProfile({ compact = false }: CoachProfileProps) {
 
                     {/* 이미지 컨테이너 */}
                     <div className="relative w-full h-full rounded-full overflow-hidden bg-ocean-800 flex items-center justify-center border-2 border-ocean-800">
-                        {photo ? (
+                        {photo && (
                             <Image
                                 src={photo}
                                 alt={name}
@@ -72,8 +72,6 @@ export default function CoachProfile({ compact = false }: CoachProfileProps) {
                                 height={112}
                                 className="object-cover w-full h-full"
                             />
-                        ) : (
-                            <span className="text-gold-400 font-elegant font-bold text-4xl">{name[0]}</span>
                         )}
                     </div>
                 </motion.div>

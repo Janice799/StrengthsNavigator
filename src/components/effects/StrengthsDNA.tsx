@@ -198,34 +198,12 @@ export default function StrengthsDNA({
     }, [width, height, domains, createParticle]);
 
     return (
-        <div className="relative">
-            <canvas
-                ref={canvasRef}
-                width={width}
-                height={height}
-                className={`rounded-2xl transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                style={{ background: 'linear-gradient(135deg, rgba(8, 20, 40, 0.9), rgba(15, 30, 60, 0.9))' }}
-            />
-
-            {/* 도메인 레전드 */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between text-xs">
-                <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-purple-500" />
-                    <span className="text-white/50">실행력</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-orange-500" />
-                    <span className="text-white/50">영향력</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-white/50">관계</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-white/50">전략</span>
-                </div>
-            </div>
-        </div>
+        <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className={`rounded-2xl transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            style={{ background: 'transparent' }}
+        />
     );
 }
