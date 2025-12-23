@@ -43,15 +43,6 @@ export default function OccasionSelector({ selectedId, onSelect, showAll = false
                     </motion.button>
                 ))}
             </div>
-
-            {!showAll && occasions.length > 6 && (
-                <button
-                    className="text-sm text-gold-400 hover:text-gold-300 transition-colors"
-                    onClick={() => {/* toggle showAll */ }}
-                >
-                    + 더 많은 상황 보기
-                </button>
-            )}
         </div>
     );
 }
