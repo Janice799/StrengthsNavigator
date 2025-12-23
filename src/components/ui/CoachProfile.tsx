@@ -19,10 +19,8 @@ export default function CoachProfile({ compact = false }: CoachProfileProps) {
                 animate={{ opacity: 1, x: 0 }}
             >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center overflow-hidden ring-1 ring-gold-400/30">
-                    {photo ? (
+                    {photo && (
                         <Image src={photo} alt={name} width={40} height={40} className="object-cover" />
-                    ) : (
-                        <span className="text-ocean-900 font-elegant font-bold text-lg">{name[0]}</span>
                     )}
                 </div>
                 <div>

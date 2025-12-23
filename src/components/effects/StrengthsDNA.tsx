@@ -100,8 +100,7 @@ export default function StrengthsDNA({
 
         // 렌더링 루프
         const render = () => {
-            ctx.fillStyle = 'rgba(8, 20, 40, 0.1)';
-            ctx.fillRect(0, 0, width, height);
+            ctx.clearRect(0, 0, width, height);
 
             const centerX = width / 2;
             const centerY = height / 2;

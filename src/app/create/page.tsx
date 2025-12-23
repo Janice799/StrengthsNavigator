@@ -17,6 +17,7 @@ import { Strength, strengths } from '@/lib/strengths';
 import { CardData, encodeCardData, validateCardData } from '@/lib/cardEncoder';
 import { saveClient, getClients, saveCardHistory } from '@/lib/clientStorage';
 import { triggerCelebration } from '@/components/effects/FireworksEffect';
+import { getTemplatesForOccasion, SituationTemplate } from '@/lib/situationTemplates';
 
 type Step = 'occasion' | 'recipient' | 'type' | 'archetype' | 'strength' | 'message' | 'preview';
 
@@ -29,6 +30,8 @@ export default function CreatePage() {
     const [openMode, setOpenMode] = useState<'envelope' | 'scratch'>('envelope');
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [aiOptions, setAiOptions] = useState<Array<{ message: string; tone: string }>>([]);
+    const [situationTemplates, setSituationTemplates] = useState<SituationTemplate[]>([]);
+    const [isCompletingSituation, setIsCompletingSituation] = useState(false);;
 
     const [cardData, setCardData] = useState<Partial<CardData>>({
         lang: 'ko',
@@ -45,6 +48,7 @@ export default function CreatePage() {
 
     const handleOccasionSelect = (occasion: Occasion) => {
         setCardData(prev => ({ ...prev, occasionId: occasion.id }));
+        setSituationTemplates(getTemplatesForOccasion(occasion.id));
         setStep('recipient');
     };
 
@@ -290,13 +294,32 @@ export default function CreatePage() {
 
                                 <div>
                                     <label className="block text-white/80 mb-2">상황 설명 (선택)</label>
+
+                                    {/* 상황 템플릿 버튼들 */}
+                                    {situationTemplates.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {situationTemplates.slice(0, 4).map(template => (
+                                                <button
+                                                    key={template.id}
+                                                    onClick={() => setCardData(prev => ({ ...prev, situation: template.text }))}
+                                                    className="px-3 py-1.5 text-xs glass rounded-full text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                                >
+                                                    {template.text}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <textarea
                                         value={cardData.situation || ''}
                                         onChange={(e) => setCardData(prev => ({ ...prev, situation: e.target.value }))}
-                                        placeholder="수신자의 현재 상황이나 코칭 포인트를 입력하세요 (예: 최근 팀장 승진, 리더십에 대한 고민 중)"
+                                        placeholder="수신자의 현재 상황이나 코칭 포인트를 입력하세요"
                                         rows={3}
                                         className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none"
                                     />
+                                    <p className="text-xs text-white/40 mt-1">
+                                        💡 템플릿을 클릭하거나 직접 입력하세요
+                                    </p>
                                 </div>
                             </motion.div>
                         )}

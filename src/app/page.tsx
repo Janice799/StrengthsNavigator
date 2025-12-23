@@ -40,7 +40,7 @@ export default function HomePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
                 >
-                    <h1 className="text-3xl md:text-4xl font-elegant font-semibold text-gold-gradient tracking-wide">
+                    <h1 className="text-3xl md:text-4xl font-elegant font-semibold text-gold-gradient tracking-wide pb-1">
                         StrengthsNavigator
                     </h1>
                     <p className="text-white/40 text-sm mt-1 tracking-widest">
