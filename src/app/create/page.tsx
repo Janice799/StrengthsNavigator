@@ -26,6 +26,7 @@ export default function CreatePage() {
     const [useStrength, setUseStrength] = useState(false);
     const [shareUrl, setShareUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [openMode, setOpenMode] = useState<'envelope' | 'scratch'>('envelope');
 
     const [cardData, setCardData] = useState<Partial<CardData>>({
         lang: 'ko',
@@ -96,7 +97,8 @@ export default function CreatePage() {
 
         const encoded = encodeCardData(fullData);
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const url = `${baseUrl}/card?data=${encoded}`;
+        const modeParam = openMode === 'scratch' ? '&mode=scratch' : '';
+        const url = `${baseUrl}/card?data=${encoded}${modeParam}`;
         setShareUrl(url);
 
         // 클라이언트 & 기록 저장
@@ -118,7 +120,7 @@ export default function CreatePage() {
         });
 
         triggerCelebration();
-    }, [cardData, selectedStrengthIds]);
+    }, [cardData, selectedStrengthIds, openMode]);
 
     const copyToClipboard = async () => {
         if (!shareUrl) return;
@@ -355,15 +357,46 @@ export default function CreatePage() {
                                 <CardPreview data={cardData} />
 
                                 {!shareUrl ? (
-                                    <div className="flex justify-center">
-                                        <motion.button
-                                            onClick={generateShareUrl}
-                                            className="px-8 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl shadow-lg"
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.98 }}
-                                        >
-                                            🎉 카드 생성하기
-                                        </motion.button>
+                                    <div className="space-y-6">
+                                        {/* 카드 열기 방식 선택 */}
+                                        <div className="glass rounded-xl p-4">
+                                            <label className="block text-white/80 mb-3 text-sm">카드 열기 방식</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    onClick={() => setOpenMode('envelope')}
+                                                    className={`p-4 rounded-xl text-center transition-all ${openMode === 'envelope'
+                                                            ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
+                                                            : 'glass border border-white/10 text-white/70 hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <span className="text-2xl block mb-1">✉️</span>
+                                                    <span className="text-sm font-medium">봉투 클릭</span>
+                                                    <p className="text-xs mt-1 opacity-60">클릭하면 카드 공개</p>
+                                                </button>
+                                                <button
+                                                    onClick={() => setOpenMode('scratch')}
+                                                    className={`p-4 rounded-xl text-center transition-all ${openMode === 'scratch'
+                                                            ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
+                                                            : 'glass border border-white/10 text-white/70 hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <span className="text-2xl block mb-1">🎫</span>
+                                                    <span className="text-sm font-medium">스크래치</span>
+                                                    <p className="text-xs mt-1 opacity-60">긁으면 카드 공개</p>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-center">
+                                            <motion.button
+                                                onClick={generateShareUrl}
+                                                className="px-8 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl shadow-lg"
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                🎉 카드 생성하기
+                                            </motion.button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <motion.div

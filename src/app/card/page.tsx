@@ -8,14 +8,21 @@ import CardPreview from '@/components/card/CardPreview';
 import SnowEffect from '@/components/effects/SnowEffect';
 import StarsEffect from '@/components/effects/StarsEffect';
 import FireworksEffect from '@/components/effects/FireworksEffect';
+import ScratchCard from '@/components/effects/ScratchCard';
 import { decodeCardData, CardData } from '@/lib/cardEncoder';
 import { getOccasionById } from '@/lib/occasions';
+import { getStrengthById } from '@/lib/strengths';
+import { getArchetypeById } from '@/lib/archetypes';
 
 function CardContent() {
     const searchParams = useSearchParams();
     const [cardData, setCardData] = useState<CardData | null>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // 스크래치 모드 확인
+    const mode = searchParams.get('mode');
+    const isScratchMode = mode === 'scratch';
 
     useEffect(() => {
         const encoded = searchParams.get('data');
@@ -34,6 +41,12 @@ function CardContent() {
     }, [searchParams]);
 
     const occasion = cardData?.occasionId ? getOccasionById(cardData.occasionId) : null;
+    const strength = cardData?.strengthId ? getStrengthById(cardData.strengthId) : null;
+    const archetype = cardData?.archetypeId ? getArchetypeById(cardData.archetypeId) : null;
+
+    const handleReveal = () => {
+        setIsRevealed(true);
+    };
 
     if (error) {
         return (
@@ -58,6 +71,21 @@ function CardContent() {
         );
     }
 
+    // 스크래치 카드 내부 컨텐츠
+    const ScratchContent = () => (
+        <div className="text-center text-white p-2">
+            <div className="text-3xl mb-2">{occasion?.icon || '✨'}</div>
+            <div className="text-gold-400 font-elegant font-medium text-sm mb-1">
+                {strength?.name.ko || archetype?.name.ko || '특별한 메시지'}
+            </div>
+            <p className="text-white/80 text-xs leading-relaxed">
+                {cardData.recipientName}님을 위한<br />
+                마음을 담은 카드가<br />
+                도착했습니다! 💌
+            </p>
+        </div>
+    );
+
     return (
         <>
             {/* 배경 효과 */}
@@ -69,69 +97,101 @@ function CardContent() {
                 <AnimatePresence mode="wait">
                     {!isRevealed ? (
                         <motion.div
-                            key="envelope"
+                            key="hidden"
                             className="text-center"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9, y: -50 }}
                         >
-                            {/* 봉투 UI */}
-                            <motion.div
-                                className="relative cursor-pointer group"
-                                onClick={() => setIsRevealed(true)}
-                                whileHover={{ scale: 1.05, y: -5 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                <div className="w-72 h-48 glass rounded-xl relative overflow-hidden">
-                                    {/* 봉투 본체 */}
-                                    <div
-                                        className="absolute inset-0"
-                                        style={{
-                                            background: `linear-gradient(145deg, ${occasion?.colors.primary || '#1e3a5f'}, ${occasion?.colors.secondary || '#0c1a2b'})`
-                                        }}
-                                    />
+                            {isScratchMode ? (
+                                /* 스크래치 카드 모드 */
+                                <>
+                                    <motion.p
+                                        className="text-white/60 mb-4 text-sm"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                    >
+                                        {cardData.recipientName}님에게 도착한 메시지
+                                    </motion.p>
 
-                                    {/* 봉투 덮개 */}
-                                    <div
-                                        className="absolute top-0 left-0 right-0 h-24 origin-top"
-                                        style={{
-                                            background: `linear-gradient(180deg, ${occasion?.colors.primary || '#1e3a5f'} 0%, ${occasion?.colors.secondary || '#0c1a2b'} 100%)`,
-                                            clipPath: 'polygon(0 0, 100% 0, 50% 100%)'
-                                        }}
-                                    />
+                                    <ScratchCard
+                                        width={320}
+                                        height={200}
+                                        revealPercent={45}
+                                        onComplete={handleReveal}
+                                    >
+                                        <ScratchContent />
+                                    </ScratchCard>
 
-                                    {/* 씰 */}
-                                    <motion.div
-                                        className="absolute top-16 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: occasion?.colors.accent || '#d4af37' }}
-                                        animate={{
-                                            boxShadow: [
-                                                '0 0 10px rgba(212, 175, 55, 0.5)',
-                                                '0 0 20px rgba(212, 175, 55, 0.8)',
-                                                '0 0 10px rgba(212, 175, 55, 0.5)'
-                                            ]
-                                        }}
+                                    <motion.p
+                                        className="mt-6 text-white/50 text-sm"
+                                        animate={{ opacity: [0.3, 0.7, 0.3] }}
                                         transition={{ duration: 2, repeat: Infinity }}
                                     >
-                                        <span className="text-xl">{occasion?.icon || '✉️'}</span>
+                                        ✨ 긁어서 카드를 확인하세요! ✨
+                                    </motion.p>
+                                </>
+                            ) : (
+                                /* 봉투 클릭 모드 (기존) */
+                                <>
+                                    <motion.div
+                                        className="relative cursor-pointer group"
+                                        onClick={handleReveal}
+                                        whileHover={{ scale: 1.05, y: -5 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <div className="w-72 h-48 glass rounded-xl relative overflow-hidden">
+                                            {/* 봉투 본체 */}
+                                            <div
+                                                className="absolute inset-0"
+                                                style={{
+                                                    background: `linear-gradient(145deg, ${occasion?.colors.primary || '#1e3a5f'}, ${occasion?.colors.secondary || '#0c1a2b'})`
+                                                }}
+                                            />
+
+                                            {/* 봉투 덮개 */}
+                                            <div
+                                                className="absolute top-0 left-0 right-0 h-24 origin-top"
+                                                style={{
+                                                    background: `linear-gradient(180deg, ${occasion?.colors.primary || '#1e3a5f'} 0%, ${occasion?.colors.secondary || '#0c1a2b'} 100%)`,
+                                                    clipPath: 'polygon(0 0, 100% 0, 50% 100%)'
+                                                }}
+                                            />
+
+                                            {/* 씰 */}
+                                            <motion.div
+                                                className="absolute top-16 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center"
+                                                style={{ backgroundColor: occasion?.colors.accent || '#d4af37' }}
+                                                animate={{
+                                                    boxShadow: [
+                                                        '0 0 10px rgba(212, 175, 55, 0.5)',
+                                                        '0 0 20px rgba(212, 175, 55, 0.8)',
+                                                        '0 0 10px rgba(212, 175, 55, 0.5)'
+                                                    ]
+                                                }}
+                                                transition={{ duration: 2, repeat: Infinity }}
+                                            >
+                                                <span className="text-xl">{occasion?.icon || '✉️'}</span>
+                                            </motion.div>
+
+                                            {/* 수신자 이름 */}
+                                            <div className="absolute bottom-4 left-0 right-0 text-center">
+                                                <p className="text-white/60 text-xs">To.</p>
+                                                <p className="text-gold-400 font-medium">{cardData.recipientName}</p>
+                                            </div>
+                                        </div>
                                     </motion.div>
 
-                                    {/* 수신자 이름 */}
-                                    <div className="absolute bottom-4 left-0 right-0 text-center">
-                                        <p className="text-white/60 text-xs">To.</p>
-                                        <p className="text-gold-400 font-medium">{cardData.recipientName}</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-
-                            {/* 안내 텍스트 */}
-                            <motion.p
-                                className="mt-8 text-white/60"
-                                animate={{ opacity: [0.5, 1, 0.5] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                            >
-                                클릭하여 카드를 열어보세요 ✨
-                            </motion.p>
+                                    {/* 안내 텍스트 */}
+                                    <motion.p
+                                        className="mt-8 text-white/60"
+                                        animate={{ opacity: [0.5, 1, 0.5] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        클릭하여 카드를 열어보세요 ✨
+                                    </motion.p>
+                                </>
+                            )}
                         </motion.div>
                     ) : (
                         <motion.div
