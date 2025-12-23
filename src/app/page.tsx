@@ -41,10 +41,10 @@ export default function HomePage() {
                     transition={{ duration: 0.6 }}
                 >
                     <h1 className="text-3xl md:text-4xl font-elegant font-semibold text-gold-gradient tracking-wide">
-                        Resonant Year
+                        StrengthsNavigator
                     </h1>
                     <p className="text-white/40 text-sm mt-1 tracking-widest">
-                        레조넌트 이어
+                        강점 네비게이터
                     </p>
                 </motion.div>
 
