@@ -5,13 +5,31 @@ import Link from 'next/link';
 import CoachProfile from '@/components/ui/CoachProfile';
 import SnowEffect from '@/components/effects/SnowEffect';
 import StarsEffect from '@/components/effects/StarsEffect';
+import StrengthsDNA from '@/components/effects/StrengthsDNA';
 
 export default function HomePage() {
+    // 코치의 도메인 분포 (강점에 따라 조정 가능)
+    const coachDomains = {
+        executing: 0.6,      // 실행력
+        influencing: 0.8,    // 영향력
+        relationship: 0.9,   // 관계구축
+        strategic: 0.7       // 전략적사고
+    };
+
     return (
         <main className="min-h-screen relative overflow-hidden">
             {/* 배경 효과 */}
             <StarsEffect count={80} />
             <SnowEffect count={100} />
+
+            {/* 강점 DNA 배경 시각화 */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                <StrengthsDNA
+                    domains={coachDomains}
+                    width={600}
+                    height={600}
+                />
+            </div>
 
             {/* 콘텐츠 */}
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-between px-4 py-12">
@@ -82,7 +100,7 @@ export default function HomePage() {
                     transition={{ delay: 0.9 }}
                 >
                     {/* 클라이언트 관리 - 미묘한 링크 */}
-                    <Link 
+                    <Link
                         href="/clients"
                         className="link-subtle inline-flex items-center gap-2"
                     >
