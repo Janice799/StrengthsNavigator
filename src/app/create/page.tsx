@@ -27,6 +27,8 @@ export default function CreatePage() {
     const [shareUrl, setShareUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [openMode, setOpenMode] = useState<'envelope' | 'scratch'>('envelope');
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [aiOptions, setAiOptions] = useState<Array<{ message: string; tone: string }>>([]);
 
     const [cardData, setCardData] = useState<Partial<CardData>>({
         lang: 'ko',
@@ -131,6 +133,52 @@ export default function CreatePage() {
         } catch (err) {
             console.error('복사 실패:', err);
         }
+    };
+
+    // AI 메시지 생성
+    const generateAIMessage = async () => {
+        if (!cardData.recipientName || !cardData.occasionId) {
+            alert('수신자 이름과 상황을 먼저 선택해주세요.');
+            return;
+        }
+
+        setIsGeneratingAI(true);
+        setAiOptions([]);
+
+        try {
+            const response = await fetch('/api/generate-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recipientName: cardData.recipientName,
+                    occasionId: cardData.occasionId,
+                    strengthId: cardData.strengthId,
+                    archetypeId: cardData.archetypeId,
+                    situation: cardData.situation,
+                    coachName: cardData.senderName || coachProfile.name,
+                    generateOptions: true
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('AI 메시지 생성 실패');
+            }
+
+            const data = await response.json();
+            if (data.options && data.options.length > 0) {
+                setAiOptions(data.options);
+            }
+        } catch (error) {
+            console.error('AI 메시지 생성 오류:', error);
+            alert('AI 메시지 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsGeneratingAI(false);
+        }
+    };
+
+    const selectAIMessage = (message: string) => {
+        setCardData(prev => ({ ...prev, personalMessage: message }));
+        setAiOptions([]);
     };
 
     const stepTitles: Record<Step, string> = {
@@ -325,7 +373,50 @@ export default function CreatePage() {
                         {step === 'message' && (
                             <motion.div key="message" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                 <div>
-                                    <label className="block text-white/80 mb-2">개인 메시지 (선택)</label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-white/80">개인 메시지 (선택)</label>
+                                        <motion.button
+                                            onClick={generateAIMessage}
+                                            disabled={isGeneratingAI}
+                                            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            {isGeneratingAI ? (
+                                                <>
+                                                    <span className="animate-spin">🔄</span>
+                                                    생성 중...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    🤖 AI로 작성하기
+                                                </>
+                                            )}
+                                        </motion.button>
+                                    </div>
+
+                                    {/* AI 옵션 선택 */}
+                                    {aiOptions.length > 0 && (
+                                        <motion.div
+                                            className="mb-4 space-y-2"
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                        >
+                                            <p className="text-sm text-gold-400 mb-2">✨ AI가 생성한 메시지 중 선택하세요:</p>
+                                            {aiOptions.map((option, index) => (
+                                                <motion.button
+                                                    key={index}
+                                                    onClick={() => selectAIMessage(option.message)}
+                                                    className="w-full p-4 glass rounded-xl text-left hover:bg-white/10 transition-colors border border-white/10"
+                                                    whileHover={{ scale: 1.01 }}
+                                                >
+                                                    <span className="text-xs text-gold-400 mb-1 block">{option.tone}</span>
+                                                    <p className="text-white/90 text-sm">{option.message}</p>
+                                                </motion.button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+
                                     <textarea
                                         value={cardData.personalMessage || ''}
                                         onChange={(e) => setCardData(prev => ({ ...prev, personalMessage: e.target.value }))}
@@ -365,8 +456,8 @@ export default function CreatePage() {
                                                 <button
                                                     onClick={() => setOpenMode('envelope')}
                                                     className={`p-4 rounded-xl text-center transition-all ${openMode === 'envelope'
-                                                            ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
-                                                            : 'glass border border-white/10 text-white/70 hover:bg-white/5'
+                                                        ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
+                                                        : 'glass border border-white/10 text-white/70 hover:bg-white/5'
                                                         }`}
                                                 >
                                                     <span className="text-2xl block mb-1">✉️</span>
@@ -376,8 +467,8 @@ export default function CreatePage() {
                                                 <button
                                                     onClick={() => setOpenMode('scratch')}
                                                     className={`p-4 rounded-xl text-center transition-all ${openMode === 'scratch'
-                                                            ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
-                                                            : 'glass border border-white/10 text-white/70 hover:bg-white/5'
+                                                        ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
+                                                        : 'glass border border-white/10 text-white/70 hover:bg-white/5'
                                                         }`}
                                                 >
                                                     <span className="text-2xl block mb-1">🎫</span>

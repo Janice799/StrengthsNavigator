@@ -10,6 +10,7 @@
     "deploy": "next build && gh-pages -d out --dotfiles"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^11.13.1",
     "next": "14.2.18",
