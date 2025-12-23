@@ -18,6 +18,8 @@ export interface CardData {
     occasionId: string;
     archetypeId?: string;
     strengthId?: string;
+    strengthIds?: string[];  // 여러 강점 지원
+    backgroundId?: string;   // 배경 이미지 ID
     situation: string;
     personalMessage: string;
     lang: 'ko' | 'en';

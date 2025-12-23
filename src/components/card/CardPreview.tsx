@@ -5,6 +5,7 @@ import CardFrame from './CardFrame';
 import { getOccasionById } from '@/lib/occasions';
 import { getArchetypeById } from '@/lib/archetypes';
 import { getStrengthById } from '@/lib/strengths';
+import { getBackgroundById } from '@/lib/cardBackgrounds';
 import { coachProfile } from '@/config/coach';
 import type { CardData } from '@/lib/cardEncoder';
 
@@ -17,6 +18,7 @@ export default function CardPreview({ data, showAnimation = true }: CardPreviewP
     const occasion = data.occasionId ? getOccasionById(data.occasionId) : null;
     const archetype = data.archetypeId ? getArchetypeById(data.archetypeId) : null;
     const strength = data.strengthId ? getStrengthById(data.strengthId) : null;
+    const background = data.backgroundId ? getBackgroundById(data.backgroundId) : null;
     const lang = data.lang || 'ko';
 
     const containerVariants = {
@@ -40,7 +42,7 @@ export default function CardPreview({ data, showAnimation = true }: CardPreviewP
     };
 
     return (
-        <CardFrame colors={occasion?.colors}>
+        <CardFrame colors={occasion?.colors} backgroundImage={background?.imagePath}>
             <motion.div
                 className="text-center space-y-8"
                 variants={showAnimation ? containerVariants : undefined}
@@ -60,10 +62,10 @@ export default function CardPreview({ data, showAnimation = true }: CardPreviewP
                 {/* 수신자 이름 */}
                 {data.recipientName && (
                     <motion.div variants={itemVariants} className="space-y-1">
-                        <p className="text-white/50 text-xs tracking-[0.2em] uppercase font-light">
+                        <p className="text-white/70 text-sm tracking-[0.2em] uppercase font-medium" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                             To.
                         </p>
-                        <h2 className="text-2xl font-elegant font-medium text-gold-gradient tracking-wide">
+                        <h2 className="text-3xl font-elegant font-bold text-gold-gradient tracking-wide" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
                             {data.recipientName}
                         </h2>
                     </motion.div>
@@ -73,7 +75,8 @@ export default function CardPreview({ data, showAnimation = true }: CardPreviewP
                 {occasion && (
                     <motion.p
                         variants={itemVariants}
-                        className="text-xl font-elegant font-normal text-white/95 leading-relaxed"
+                        className="text-2xl font-elegant font-bold text-white leading-relaxed"
+                        style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
                     >
                         {occasion.defaultGreeting[lang]}
                     </motion.p>
@@ -109,18 +112,46 @@ export default function CardPreview({ data, showAnimation = true }: CardPreviewP
                     </motion.div>
                 )}
 
-                {/* 강점 메시지 */}
-                {strength && !archetype && (
-                    <motion.div variants={itemVariants} className="space-y-4 py-2">
-                        <div className="flex items-center justify-center gap-3">
-                            <span className="text-2xl">{strength.icon}</span>
-                            <span className="text-gold-400 font-elegant font-medium text-lg">
-                                {strength.name[lang]}
-                            </span>
-                        </div>
-                        <p className="text-white/90 font-signature text-lg leading-relaxed px-4">
-                            &ldquo;{strength.affirmation[lang]}&rdquo;
-                        </p>
+                {/* 강점 메시지 - 여러 강점 지원 */}
+                {!archetype && (data.strengthIds?.length || strength) && (
+                    <motion.div variants={itemVariants} className="space-y-6 py-2">
+                        {/* strengthIds가 있으면 모든 강점 표시 */}
+                        {data.strengthIds && data.strengthIds.length > 0 ? (
+                            data.strengthIds.map((sId, index) => {
+                                const s = getStrengthById(sId);
+                                if (!s) return null;
+                                return (
+                                    <div key={sId} className="space-y-3">
+                                        {index > 0 && <div className="divider-elegant w-12 mx-auto" />}
+                                        <div className="flex items-center justify-center gap-3">
+                                            <span className="text-2xl">{s.icon}</span>
+                                            <span className="text-gold-400 font-elegant font-medium text-lg">
+                                                {s.name[lang]}
+                                            </span>
+                                        </div>
+                                        <p className="text-white/90 font-signature text-base leading-relaxed px-4">
+                                            &ldquo;{s.affirmation[lang]}&rdquo;
+                                        </p>
+                                        <p className="text-white/60 text-sm leading-relaxed px-4">
+                                            {s.description[lang]}
+                                        </p>
+                                    </div>
+                                );
+                            })
+                        ) : strength && (
+                            /* 단일 strength (하위 호환) */
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-center gap-3">
+                                    <span className="text-2xl">{strength.icon}</span>
+                                    <span className="text-gold-400 font-elegant font-medium text-lg">
+                                        {strength.name[lang]}
+                                    </span>
+                                </div>
+                                <p className="text-white/90 font-signature text-lg leading-relaxed px-4">
+                                    &ldquo;{strength.affirmation[lang]}&rdquo;
+                                </p>
+                            </div>
+                        )}
                     </motion.div>
                 )}
 

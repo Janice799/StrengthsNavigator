@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
+import Image from 'next/image';
 
 interface CardFrameProps {
     children: ReactNode;
@@ -10,6 +11,7 @@ interface CardFrameProps {
         secondary: string;
         accent: string;
     };
+    backgroundImage?: string;
     className?: string;
 }
 
@@ -20,6 +22,7 @@ export default function CardFrame({
         secondary: '#0c1a2b',
         accent: '#d4af37'
     },
+    backgroundImage,
     className = ''
 }: CardFrameProps) {
     return (
@@ -55,7 +58,7 @@ export default function CardFrame({
             <div
                 className="relative rounded-2xl overflow-hidden"
                 style={{
-                    background: `linear-gradient(165deg, ${colors.primary}f5 0%, ${colors.secondary}fa 100%)`,
+                    background: backgroundImage ? undefined : `linear-gradient(165deg, ${colors.primary}f5 0%, ${colors.secondary}fa 100%)`,
                     boxShadow: `
                         0 30px 60px -15px rgba(0, 0, 0, 0.5),
                         0 0 50px ${colors.accent}15,
@@ -63,6 +66,22 @@ export default function CardFrame({
                     `
                 }}
             >
+                {/* 배경 이미지 */}
+                {backgroundImage && (
+                    <Image
+                        src={backgroundImage}
+                        alt="Card background"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                )}
+
+                {/* 배경 오버레이 (텍스트 가독성) */}
+                {backgroundImage && (
+                    <div className="absolute inset-0 bg-black/50" />
+                )}
+
                 {/* 미세한 그레인 텍스처 (노이즈 효과) */}
                 <div
                     className="absolute inset-0 opacity-[0.03] pointer-events-none"

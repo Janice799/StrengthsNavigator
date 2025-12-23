@@ -19,6 +19,9 @@ function CardContent() {
     const [cardData, setCardData] = useState<CardData | null>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showReplyForm, setShowReplyForm] = useState(false);
+    const [replyMessage, setReplyMessage] = useState('');
+    const [replySent, setReplySent] = useState(false);
 
     // 스크래치 모드 확인
     const mode = searchParams.get('mode');
@@ -274,20 +277,86 @@ function CardContent() {
                                 </motion.div>
                             )}
 
-                            {/* 나도 카드 만들기 버튼 */}
+                            {/* 답장하기 섹션 */}
                             <motion.div
-                                className="mt-8 text-center"
+                                className="mt-8 w-full"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ delay: 1.2 }}
+                                transition={{ delay: 1.0 }}
                             >
-                                <Link
-                                    href="/"
-                                    className="text-gold-400 hover:text-gold-300 text-sm"
-                                >
-                                    나도 카드 만들어보기 →
-                                </Link>
+                                {!showReplyForm && !replySent && (
+                                    <motion.button
+                                        onClick={() => setShowReplyForm(true)}
+                                        className="w-full py-4 glass rounded-2xl text-white hover:bg-white/10 transition-colors border border-white/10"
+                                        whileHover={{ scale: 1.01 }}
+                                        whileTap={{ scale: 0.99 }}
+                                    >
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="text-xl">💌</span>
+                                            감사 인사 보내기
+                                        </span>
+                                    </motion.button>
+                                )}
+
+                                {showReplyForm && !replySent && (
+                                    <motion.div
+                                        className="glass rounded-2xl p-6"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                    >
+                                        <h4 className="text-lg font-medium text-white mb-4 text-center">
+                                            💌 한마디 남기기
+                                        </h4>
+                                        <textarea
+                                            value={replyMessage}
+                                            onChange={(e) => setReplyMessage(e.target.value)}
+                                            placeholder="감사의 마음을 전해보세요..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none mb-4"
+                                        />
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setShowReplyForm(false)}
+                                                className="flex-1 py-3 glass rounded-xl text-white/60 hover:bg-white/5 transition-colors"
+                                            >
+                                                취소
+                                            </button>
+                                            <motion.button
+                                                onClick={() => {
+                                                    // TODO: 실제 이메일 전송 또는 Supabase 저장 구현
+                                                    if (cardData?.coach?.contact?.email) {
+                                                        const subject = encodeURIComponent(`[답장] ${cardData.recipientName}님으로부터 메시지가 도착했습니다`);
+                                                        const body = encodeURIComponent(`${replyMessage}\n\n---\n${cardData.recipientName} 드림`);
+                                                        window.open(`mailto:${cardData.coach.contact.email}?subject=${subject}&body=${body}`);
+                                                    }
+                                                    setReplySent(true);
+                                                    setShowReplyForm(false);
+                                                }}
+                                                disabled={!replyMessage.trim()}
+                                                className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-medium rounded-xl disabled:opacity-50"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                보내기 ✨
+                                            </motion.button>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {replySent && (
+                                    <motion.div
+                                        className="glass rounded-2xl p-6 text-center"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                    >
+                                        <span className="text-4xl mb-3 block">💛</span>
+                                        <p className="text-gold-400 font-medium">메시지가 전송되었어요!</p>
+                                        <p className="text-white/60 text-sm mt-1">곧 확인할게요 😊</p>
+                                    </motion.div>
+                                )}
                             </motion.div>
+
+
                         </motion.div>
                     )}
                 </AnimatePresence>

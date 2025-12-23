@@ -18,8 +18,10 @@ import { CardData, encodeCardData, validateCardData } from '@/lib/cardEncoder';
 import { saveClient, getClients, saveCardHistory } from '@/lib/clientStorage';
 import { triggerCelebration } from '@/components/effects/FireworksEffect';
 import { getTemplatesForOccasion, SituationTemplate } from '@/lib/situationTemplates';
+import BackgroundSelector from '@/components/ui/BackgroundSelector';
+import { CardBackground, getBackgroundById } from '@/lib/cardBackgrounds';
 
-type Step = 'occasion' | 'recipient' | 'type' | 'archetype' | 'strength' | 'message' | 'preview';
+type Step = 'occasion' | 'recipient' | 'type' | 'archetype' | 'strength' | 'background' | 'message' | 'preview';
 
 export default function CreatePage() {
     const [step, setStep] = useState<Step>('occasion');
@@ -31,7 +33,6 @@ export default function CreatePage() {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [aiOptions, setAiOptions] = useState<Array<{ message: string; tone: string }>>([]);
     const [situationTemplates, setSituationTemplates] = useState<SituationTemplate[]>([]);
-    const [isCompletingSituation, setIsCompletingSituation] = useState(false);;
 
     const [cardData, setCardData] = useState<Partial<CardData>>({
         lang: 'ko',
@@ -53,22 +54,28 @@ export default function CreatePage() {
     };
 
     const handleArchetypeSelect = (archetype: Archetype) => {
-        setCardData(prev => ({ ...prev, archetypeId: archetype.id, strengthId: undefined }));
+        setCardData(prev => ({ ...prev, archetypeId: archetype.id, strengthId: undefined, strengthIds: undefined }));
     };
 
     const handleStrengthSelect = (strength: Strength) => {
-        setSelectedStrengthIds(prev => [...prev, strength.id]);
-        if (selectedStrengthIds.length === 0) {
-            setCardData(prev => ({ ...prev, strengthId: strength.id, archetypeId: undefined }));
-        }
+        const newIds = [...selectedStrengthIds, strength.id];
+        setSelectedStrengthIds(newIds);
+        setCardData(prev => ({
+            ...prev,
+            strengthId: newIds[0],
+            strengthIds: newIds,
+            archetypeId: undefined
+        }));
     };
 
     const handleStrengthDeselect = (strengthId: string) => {
-        setSelectedStrengthIds(prev => prev.filter(id => id !== strengthId));
-        if (cardData.strengthId === strengthId) {
-            const remaining = selectedStrengthIds.filter(id => id !== strengthId);
-            setCardData(prev => ({ ...prev, strengthId: remaining[0] || undefined }));
-        }
+        const newIds = selectedStrengthIds.filter(id => id !== strengthId);
+        setSelectedStrengthIds(newIds);
+        setCardData(prev => ({
+            ...prev,
+            strengthId: newIds[0] || undefined,
+            strengthIds: newIds.length > 0 ? newIds : undefined
+        }));
     };
 
     const generateShareUrl = useCallback(() => {
@@ -84,11 +91,12 @@ export default function CreatePage() {
             occasionId: cardData.occasionId || 'new-year',
             archetypeId: cardData.archetypeId,
             strengthId: cardData.strengthId,
+            strengthIds: selectedStrengthIds.length > 0 ? selectedStrengthIds : undefined,
+            backgroundId: cardData.backgroundId,
             situation: cardData.situation || '',
             personalMessage: cardData.personalMessage || '',
             lang: cardData.lang || 'ko',
             createdAt: new Date().toISOString(),
-            // 코치 정보 포함
             coach: {
                 name: coachProfile.name,
                 title: coachProfile.title,
@@ -107,7 +115,6 @@ export default function CreatePage() {
         const url = `${baseUrl}/card?data=${encoded}${modeParam}`;
         setShareUrl(url);
 
-        // 클라이언트 & 기록 저장
         saveClient({
             name: fullData.recipientName,
             strengthIds: selectedStrengthIds,
@@ -139,7 +146,6 @@ export default function CreatePage() {
         }
     };
 
-    // AI 메시지 생성
     const generateAIMessage = async () => {
         if (!cardData.recipientName || !cardData.occasionId) {
             alert('수신자 이름과 상황을 먼저 선택해주세요.');
@@ -156,25 +162,25 @@ export default function CreatePage() {
                 body: JSON.stringify({
                     recipientName: cardData.recipientName,
                     occasionId: cardData.occasionId,
-                    strengthId: cardData.strengthId,
                     archetypeId: cardData.archetypeId,
+                    strengthId: cardData.strengthId,
                     situation: cardData.situation,
-                    coachName: cardData.senderName || coachProfile.name,
-                    generateOptions: true
+                    lang: cardData.lang,
+                    count: 3
                 })
             });
 
-            if (!response.ok) {
-                throw new Error('AI 메시지 생성 실패');
-            }
-
-            const data = await response.json();
-            if (data.options && data.options.length > 0) {
-                setAiOptions(data.options);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.options) {
+                    setAiOptions(data.options);
+                } else if (data.message) {
+                    setCardData(prev => ({ ...prev, personalMessage: data.message }));
+                }
             }
         } catch (error) {
             console.error('AI 메시지 생성 오류:', error);
-            alert('AI 메시지 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+            alert('AI 메시지 생성 중 오류가 발생했습니다.');
         } finally {
             setIsGeneratingAI(false);
         }
@@ -191,6 +197,7 @@ export default function CreatePage() {
         type: '메시지 타입',
         archetype: '원형 선택',
         strength: '강점 선택',
+        background: '배경 선택',
         message: '메시지 작성',
         preview: '카드 완성'
     };
@@ -202,13 +209,14 @@ export default function CreatePage() {
             case 'type': return true;
             case 'archetype': return !!cardData.archetypeId;
             case 'strength': return !!cardData.strengthId;
+            case 'background': return true;
             case 'message': return true;
             default: return true;
         }
     };
 
     const nextStep = () => {
-        const steps: Step[] = ['occasion', 'recipient', 'type', useStrength ? 'strength' : 'archetype', 'message', 'preview'];
+        const steps: Step[] = ['occasion', 'recipient', 'type', useStrength ? 'strength' : 'archetype', 'background', 'message', 'preview'];
         const currentIndex = steps.indexOf(step);
         if (currentIndex < steps.length - 1) {
             setStep(steps[currentIndex + 1]);
@@ -216,7 +224,7 @@ export default function CreatePage() {
     };
 
     const prevStep = () => {
-        const steps: Step[] = ['occasion', 'recipient', 'type', useStrength ? 'strength' : 'archetype', 'message', 'preview'];
+        const steps: Step[] = ['occasion', 'recipient', 'type', useStrength ? 'strength' : 'archetype', 'background', 'message', 'preview'];
         const currentIndex = steps.indexOf(step);
         if (currentIndex > 0) {
             setStep(steps[currentIndex - 1]);
@@ -229,35 +237,21 @@ export default function CreatePage() {
             <SnowEffect count={80} />
 
             <div className="relative z-10 min-h-screen py-8 px-4">
-                {/* 헤더 */}
                 <div className="max-w-4xl mx-auto mb-8">
                     <div className="flex items-center justify-between">
                         <Link href="/" className="text-white/60 hover:text-white transition-colors flex items-center gap-2">
                             ← 홈으로
                         </Link>
-                        <CoachProfile compact />
-                    </div>
-
-                    {/* 진행 상태 */}
-                    <div className="mt-6">
-                        <div className="flex items-center justify-between text-sm text-white/60 mb-2">
-                            <span>{stepTitles[step]}</span>
-                            <span>{Object.keys(stepTitles).indexOf(step) + 1} / {Object.keys(stepTitles).length}</span>
+                        <div className="text-center">
+                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">카드 만들기</h1>
+                            <p className="text-white/60 text-sm mt-1">{stepTitles[step]}</p>
                         </div>
-                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                            <motion.div
-                                className="h-full bg-gold-500"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${((Object.keys(stepTitles).indexOf(step) + 1) / Object.keys(stepTitles).length) * 100}%` }}
-                            />
-                        </div>
+                        <div className="w-20" />
                     </div>
                 </div>
 
-                {/* 메인 콘텐츠 */}
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-2xl mx-auto">
                     <AnimatePresence mode="wait">
-                        {/* Step 1: 상황 선택 */}
                         {step === 'occasion' && (
                             <motion.div key="occasion" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                                 <OccasionSelector
@@ -265,95 +259,64 @@ export default function CreatePage() {
                                     onSelect={handleOccasionSelect}
                                     showAll={showAllOccasions}
                                 />
-                                <button
-                                    className="mt-4 text-sm text-gold-400 hover:text-gold-300 whitespace-nowrap"
-                                    onClick={() => setShowAllOccasions(!showAllOccasions)}
-                                >
-                                    {showAllOccasions ? '간략히 보기' : '+ 더 많은 상황 보기'}
-                                </button>
+                                {!showAllOccasions && (
+                                    <motion.button
+                                        onClick={() => setShowAllOccasions(true)}
+                                        className="mt-6 w-full py-3 text-gold-400 hover:text-gold-300 transition-colors text-sm"
+                                    >
+                                        더 많은 상황 보기 →
+                                    </motion.button>
+                                )}
                             </motion.div>
                         )}
 
-                        {/* Step 2: 수신자 정보 */}
                         {step === 'recipient' && (
                             <motion.div key="recipient" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                 <div>
-                                    <label className="block text-white/80 mb-2">수신자 이름</label>
+                                    <label className="block text-white/80 mb-2">받으실 분의 이름</label>
                                     <input
                                         type="text"
                                         value={cardData.recipientName || ''}
                                         onChange={(e) => setCardData(prev => ({ ...prev, recipientName: e.target.value }))}
-                                        placeholder="받으실 분의 이름을 입력하세요"
                                         className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50"
+                                        placeholder="받으실 분의 이름을 입력하세요"
                                         list="existing-clients"
                                     />
                                     <datalist id="existing-clients">
                                         {existingClients.map(name => <option key={name} value={name} />)}
                                     </datalist>
                                 </div>
-
-                                <div>
-                                    <label className="block text-white/80 mb-2">상황 설명 (선택)</label>
-
-                                    {/* 상황 템플릿 버튼들 */}
-                                    {situationTemplates.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {situationTemplates.slice(0, 4).map(template => (
-                                                <button
-                                                    key={template.id}
-                                                    onClick={() => setCardData(prev => ({ ...prev, situation: template.text }))}
-                                                    className="px-3 py-1.5 text-xs glass rounded-full text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                                                >
-                                                    {template.text}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <textarea
-                                        value={cardData.situation || ''}
-                                        onChange={(e) => setCardData(prev => ({ ...prev, situation: e.target.value }))}
-                                        placeholder="수신자의 현재 상황이나 코칭 포인트를 입력하세요"
-                                        rows={3}
-                                        className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none"
-                                    />
-                                    <p className="text-xs text-white/40 mt-1">
-                                        💡 템플릿을 클릭하거나 직접 입력하세요
-                                    </p>
-                                </div>
                             </motion.div>
                         )}
 
-                        {/* Step 3: 메시지 타입 선택 */}
                         {step === 'type' && (
-                            <motion.div key="type" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                                <h3 className="text-lg font-semibold text-white/90">어떤 메시지를 보내시겠어요?</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <motion.div key="type" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                                <p className="text-white/60 text-center mb-6">메시지 스타일을 선택하세요</p>
+                                <div className="grid grid-cols-2 gap-4">
                                     <motion.button
-                                        onClick={() => { setUseStrength(false); setStep('archetype'); }}
-                                        className="glass rounded-xl p-6 text-left hover:bg-white/10 transition-colors"
+                                        onClick={() => { setUseStrength(false); nextStep(); }}
+                                        className={`p-6 glass rounded-2xl text-left hover:bg-white/10 transition-colors border ${!useStrength ? 'border-gold-400' : 'border-white/10'}`}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
-                                        <span className="text-4xl mb-4 block">🎭</span>
-                                        <h4 className="text-lg font-medium text-white mb-2">원형 기반</h4>
-                                        <p className="text-sm text-white/60">융의 12가지 원형으로 수신자의 본질을 표현합니다</p>
+                                        <span className="text-3xl mb-3 block">🎭</span>
+                                        <h3 className="text-white font-medium mb-1">원형 기반</h3>
+                                        <p className="text-white/60 text-sm">12가지 성격 원형으로 메시지 전달</p>
                                     </motion.button>
                                     <motion.button
-                                        onClick={() => { setUseStrength(true); setStep('strength'); }}
-                                        className="glass rounded-xl p-6 text-left hover:bg-white/10 transition-colors"
+                                        onClick={() => { setUseStrength(true); nextStep(); }}
+                                        className={`p-6 glass rounded-2xl text-left hover:bg-white/10 transition-colors border ${useStrength ? 'border-gold-400' : 'border-white/10'}`}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
-                                        <span className="text-4xl mb-4 block">💪</span>
-                                        <h4 className="text-lg font-medium text-white mb-2">강점 기반</h4>
-                                        <p className="text-sm text-white/60">갤럽 34가지 강점으로 수신자를 응원합니다</p>
+                                        <span className="text-3xl mb-3 block">💪</span>
+                                        <h3 className="text-white font-medium mb-1">강점 기반</h3>
+                                        <p className="text-white/60 text-sm">34가지 강점으로 맞춤 메시지</p>
                                     </motion.button>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Step 4a: 원형 선택 */}
                         {step === 'archetype' && (
                             <motion.div key="archetype" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                                 <ArchetypeSelector
@@ -364,7 +327,6 @@ export default function CreatePage() {
                             </motion.div>
                         )}
 
-                        {/* Step 4b: 강점 선택 */}
                         {step === 'strength' && (
                             <motion.div key="strength" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                                 <StrengthSelector
@@ -392,176 +354,113 @@ export default function CreatePage() {
                             </motion.div>
                         )}
 
-                        {/* Step 5: 메시지 작성 */}
+                        {step === 'background' && (
+                            <motion.div key="background" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                                <BackgroundSelector
+                                    occasionId={cardData.occasionId || ''}
+                                    selectedBackgroundId={cardData.backgroundId}
+                                    onSelect={(bg: CardBackground) => setCardData(prev => ({ ...prev, backgroundId: bg.id }))}
+                                    lang={cardData.lang}
+                                />
+                            </motion.div>
+                        )}
+
                         {step === 'message' && (
                             <motion.div key="message" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                 <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="text-white/80">개인 메시지 (선택)</label>
-                                        <motion.button
-                                            onClick={generateAIMessage}
-                                            disabled={isGeneratingAI}
-                                            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg disabled:opacity-50 flex items-center gap-2"
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                        >
-                                            {isGeneratingAI ? (
-                                                <>
-                                                    <span className="animate-spin">🔄</span>
-                                                    생성 중...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    🤖 AI로 작성하기
-                                                </>
-                                            )}
-                                        </motion.button>
-                                    </div>
-
-                                    {/* AI 옵션 선택 */}
-                                    {aiOptions.length > 0 && (
-                                        <motion.div
-                                            className="mb-4 space-y-2"
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                        >
-                                            <p className="text-sm text-gold-400 mb-2">✨ AI가 생성한 메시지 중 선택하세요:</p>
-                                            {aiOptions.map((option, index) => (
-                                                <motion.button
-                                                    key={index}
-                                                    onClick={() => selectAIMessage(option.message)}
-                                                    className="w-full p-4 glass rounded-xl text-left hover:bg-white/10 transition-colors border border-white/10"
-                                                    whileHover={{ scale: 1.01 }}
-                                                >
-                                                    <span className="text-xs text-gold-400 mb-1 block">{option.tone}</span>
-                                                    <p className="text-white/90 text-sm">{option.message}</p>
-                                                </motion.button>
-                                            ))}
-                                        </motion.div>
-                                    )}
-
+                                    <label className="block text-white/80 mb-2">개인 메시지</label>
                                     <textarea
                                         value={cardData.personalMessage || ''}
                                         onChange={(e) => setCardData(prev => ({ ...prev, personalMessage: e.target.value }))}
-                                        placeholder="코치로서 전하고 싶은 개인적인 메시지를 작성하세요"
-                                        rows={5}
-                                        maxLength={500}
                                         className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none"
-                                    />
-                                    <p className="text-xs text-white/40 mt-1 text-right">
-                                        {(cardData.personalMessage || '').length}/500
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-white/80 mb-2">발신자 이름</label>
-                                    <input
-                                        type="text"
-                                        value={cardData.senderName || ''}
-                                        onChange={(e) => setCardData(prev => ({ ...prev, senderName: e.target.value }))}
-                                        className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50"
+                                        rows={4}
+                                        placeholder="진심을 담은 메시지를 작성해주세요"
                                     />
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Step 6: 미리보기 & 공유 */}
                         {step === 'preview' && (
                             <motion.div key="preview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                 <CardPreview data={cardData} />
 
                                 {!shareUrl ? (
-                                    <div className="space-y-6">
-                                        {/* 카드 열기 방식 선택 */}
-                                        <div className="glass rounded-xl p-4">
-                                            <label className="block text-white/80 mb-3 text-sm">카드 열기 방식</label>
+                                    <>
+                                        <div className="space-y-3">
+                                            <p className="text-white/60 text-sm text-center">카드 열기 방식</p>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <button
+                                                    type="button"
                                                     onClick={() => setOpenMode('envelope')}
-                                                    className={`p-4 rounded-xl text-center transition-all ${openMode === 'envelope'
-                                                        ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
-                                                        : 'glass border border-white/10 text-white/70 hover:bg-white/5'
-                                                        }`}
+                                                    className={`p-4 glass rounded-xl text-center transition-all cursor-pointer ${openMode === 'envelope' ? 'border-2 border-gold-400' : 'border border-white/10 hover:bg-white/5'}`}
                                                 >
-                                                    <span className="text-2xl block mb-1">✉️</span>
-                                                    <span className="text-sm font-medium">봉투 클릭</span>
-                                                    <p className="text-xs mt-1 opacity-60">클릭하면 카드 공개</p>
+                                                    <span className="text-2xl mb-2 block">💌</span>
+                                                    <span className="text-white text-sm">봉투 열기</span>
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     onClick={() => setOpenMode('scratch')}
-                                                    className={`p-4 rounded-xl text-center transition-all ${openMode === 'scratch'
-                                                        ? 'bg-gold-500/20 border-2 border-gold-400 text-gold-400'
-                                                        : 'glass border border-white/10 text-white/70 hover:bg-white/5'
-                                                        }`}
+                                                    className={`p-4 glass rounded-xl text-center transition-all cursor-pointer ${openMode === 'scratch' ? 'border-2 border-gold-400' : 'border border-white/10 hover:bg-white/5'}`}
                                                 >
-                                                    <span className="text-2xl block mb-1">🎫</span>
-                                                    <span className="text-sm font-medium">스크래치</span>
-                                                    <p className="text-xs mt-1 opacity-60">긁으면 카드 공개</p>
+                                                    <span className="text-2xl mb-2 block">🎫</span>
+                                                    <span className="text-white text-sm">스크래치</span>
                                                 </button>
                                             </div>
                                         </div>
-
-                                        <div className="flex justify-center">
-                                            <motion.button
-                                                onClick={generateShareUrl}
-                                                className="px-8 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl shadow-lg"
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.98 }}
-                                            >
-                                                🎉 카드 생성하기
-                                            </motion.button>
-                                        </div>
-                                    </div>
+                                        <motion.button
+                                            onClick={generateShareUrl}
+                                            className="w-full py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-2xl"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            카드 생성하기 ✨
+                                        </motion.button>
+                                    </>
                                 ) : (
-                                    <motion.div
-                                        className="glass rounded-xl p-6 space-y-4"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                    >
-                                        <h3 className="text-lg font-semibold text-gold-400 text-center">🎊 카드가 생성되었습니다!</h3>
-                                        <div className="flex gap-2">
+                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                                        <div className="glass rounded-xl p-4">
+                                            <p className="text-white/60 text-xs mb-2">공유 URL</p>
                                             <input
                                                 type="text"
-                                                readOnly
                                                 value={shareUrl}
-                                                className="flex-1 px-4 py-3 glass rounded-xl text-white/80 text-sm truncate"
+                                                readOnly
+                                                className="w-full bg-transparent text-white text-sm border-none focus:outline-none"
                                             />
-                                            <button
-                                                onClick={copyToClipboard}
-                                                className="px-4 py-3 bg-gold-500 text-ocean-900 font-medium rounded-xl hover:bg-gold-400 transition-colors"
-                                            >
-                                                {copied ? '✓ 복사됨' : '복사'}
-                                            </button>
                                         </div>
-                                        <p className="text-center text-white/60 text-sm">
-                                            이 링크를 수신자에게 공유하세요!
-                                        </p>
+                                        <motion.button
+                                            onClick={copyToClipboard}
+                                            className="w-full py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-2xl"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            {copied ? '복사 완료! ✓' : 'URL 복사하기'}
+                                        </motion.button>
                                     </motion.div>
                                 )}
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* 네비게이션 버튼 */}
-                    {step !== 'occasion' && !shareUrl && (
-                        <div className="flex justify-between mt-8">
-                            <button
+                    {step !== 'occasion' && step !== 'preview' && (
+                        <div className="flex gap-4 mt-8">
+                            <motion.button
                                 onClick={prevStep}
-                                className="px-6 py-3 glass rounded-xl text-white hover:bg-white/15 transition-colors"
+                                className="flex-1 py-3 glass rounded-xl text-white/70 hover:bg-white/10 transition-colors"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                             >
                                 ← 이전
-                            </button>
-                            {step !== 'preview' && (
-                                <button
+                            </motion.button>
+                            {step !== 'type' && (
+                                <motion.button
                                     onClick={nextStep}
                                     disabled={!canProceed()}
-                                    className={`px-6 py-3 rounded-xl font-medium transition-all ${canProceed()
-                                        ? 'bg-gold-500 text-ocean-900 hover:bg-gold-400'
-                                        : 'bg-white/10 text-white/40 cursor-not-allowed'
-                                        }`}
+                                    className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-medium rounded-xl disabled:opacity-50"
+                                    whileHover={{ scale: canProceed() ? 1.02 : 1 }}
+                                    whileTap={{ scale: canProceed() ? 0.98 : 1 }}
                                 >
                                     다음 →
-                                </button>
+                                </motion.button>
                             )}
                         </div>
                     )}
