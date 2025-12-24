@@ -1,0 +1,40 @@
+{
+    "ko": {
+        "cardArrived": "강점 카드가 도착했어요!",
+        "to": "To.",
+        "from": "From.",
+        "scratchHint": "👆 손가락이나 마우스로 긁어서 메시지를 확인하세요!",
+        "replyToCoach": "코치에게 답장하기",
+        "email": "이메일",
+        "website": "홈페이지",
+        "kakaoShare": "카카오톡 공유",
+        "copyLink": "링크 복사",
+        "replySent": "답장이 코치에게 전달되었습니다!",
+        "replyTitle": "코치에게 답장",
+        "replyPlaceholder": "코치에게 전하고 싶은 말을 적어주세요...",
+        "sender": "보내는 분",
+        "cancel": "취소",
+        "sendReply": "답장 보내기",
+        "sending": "전송 중...",
+        "linkCopied": "링크가 복사되었습니다!"
+    },
+    "en": {
+        "cardArrived": "A Strengths Card has arrived!",
+        "to": "To.",
+        "from": "From.",
+        "scratchHint": "👆 Scratch with your finger or mouse to reveal the message!",
+        "replyToCoach": "Reply to Coach",
+        "email": "Email",
+        "website": "Website",
+        "kakaoShare": "Share on KakaoTalk",
+        "copyLink": "Copy Link",
+        "replySent": "Your reply has been sent to the coach!",
+        "replyTitle": "Reply to Coach",
+        "replyPlaceholder": "Write a message to your coach...",
+        "sender": "From",
+        "cancel": "Cancel",
+        "sendReply": "Send Reply",
+        "sending": "Sending...",
+        "linkCopied": "Link copied!"
+    }
+}

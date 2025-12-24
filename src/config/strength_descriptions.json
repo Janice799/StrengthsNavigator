@@ -1,0 +1,342 @@
+{
+    "achiever": {
+        "ko": {
+            "trait": "끊임없이 성취를 향해 달리는",
+            "description": "당신은 매일 무언가를 이루어야 하는 내면의 불씨를 가지고 있습니다. 하루가 끝날 때 뭔가를 완수했다는 느낌 없이는 만족할 수 없지요. 이 끊임없는 추진력이 당신을 특별하게 만듭니다."
+        },
+        "en": {
+            "trait": "constantly striving for achievement",
+            "description": "You have an inner fire that drives you to accomplish something every single day. You can't feel satisfied at the end of a day unless you've completed something tangible. This relentless drive makes you extraordinary."
+        }
+    },
+    "activator": {
+        "ko": {
+            "trait": "생각을 행동으로 바꾸는",
+            "description": "당신은 '언제 시작할까?'가 가장 중요한 질문임을 압니다. 분석은 충분히 했고, 이제 행동할 때입니다. 당신의 결단력이 팀을 움직이게 합니다."
+        },
+        "en": {
+            "trait": "turning thoughts into action",
+            "description": "You know that 'When do we start?' is the most important question. Analysis is complete, now it's time for action. Your decisiveness moves teams forward."
+        }
+    },
+    "adaptability": {
+        "ko": {
+            "trait": "변화의 물결을 타는",
+            "description": "당신은 지금 이 순간을 살며, 미래를 고정된 목적지가 아닌 흐르는 강처럼 받아들입니다. 예상치 못한 상황에서도 유연하게 대처하는 당신의 능력은 귀한 재능입니다."
+        },
+        "en": {
+            "trait": "riding the waves of change",
+            "description": "You live in the moment and see the future as a flowing river, not a fixed destination. Your ability to adapt flexibly to unexpected situations is a precious gift."
+        }
+    },
+    "analytical": {
+        "ko": {
+            "trait": "본질을 꿰뚫어 보는",
+            "description": "당신은 '증명해 보세요'라고 당당히 요구합니다. 주관적인 주장보다 객관적인 데이터를 신뢰하며, 패턴과 연결고리를 찾아내는 날카로운 눈을 가졌습니다."
+        },
+        "en": {
+            "trait": "seeing through to the essence",
+            "description": "You confidently demand 'Prove it.' You trust objective data over subjective claims and have a keen eye for finding patterns and connections."
+        }
+    },
+    "arranger": {
+        "ko": {
+            "trait": "복잡함 속에서 질서를 찾는",
+            "description": "당신은 많은 요소들을 조율하여 최상의 결과를 만들어냅니다. 마치 오케스트라 지휘자처럼, 모든 것을 최고의 위치에 배치하는 능력이 있습니다."
+        },
+        "en": {
+            "trait": "finding order in complexity",
+            "description": "You orchestrate many elements to create optimal results. Like a conductor, you have the ability to place everything in its best position."
+        }
+    },
+    "belief": {
+        "ko": {
+            "trait": "흔들리지 않는 가치관을 가진",
+            "description": "당신에게는 삶의 방향을 정해주는 핵심 가치가 있습니다. 이 가치들이 당신에게 의미와 만족감을 주며, 진정성 있는 삶을 살도록 이끕니다."
+        },
+        "en": {
+            "trait": "holding unwavering values",
+            "description": "You have core values that give direction to your life. These values provide meaning and satisfaction, guiding you toward an authentic life."
+        }
+    },
+    "command": {
+        "ko": {
+            "trait": "결단력 있게 이끄는",
+            "description": "당신은 상황을 장악하고 결정을 내리는 것을 두려워하지 않습니다. 다른 사람들이 머뭇거릴 때, 당신은 앞장서서 방향을 제시합니다."
+        },
+        "en": {
+            "trait": "leading with decisiveness",
+            "description": "You're not afraid to take charge and make decisions. When others hesitate, you step forward and provide direction."
+        }
+    },
+    "communication": {
+        "ko": {
+            "trait": "말로 세상을 색칠하는",
+            "description": "당신은 아이디어에 생명을 불어넣습니다. 이야기를 생생하게 전달하고, 건조한 개념을 흥미진진하게 만드는 재능이 있습니다."
+        },
+        "en": {
+            "trait": "painting the world with words",
+            "description": "You bring ideas to life. You have the gift of telling vivid stories and making dry concepts exciting."
+        }
+    },
+    "competition": {
+        "ko": {
+            "trait": "승리를 향해 불타는",
+            "description": "당신은 다른 사람들과 비교하며 자신의 성과를 측정합니다. 1등이 되고자 하는 열망이 당신을 끊임없이 발전하게 만듭니다."
+        },
+        "en": {
+            "trait": "burning for victory",
+            "description": "You measure your performance by comparing with others. Your desire to be first drives you to continuously improve."
+        }
+    },
+    "connectedness": {
+        "ko": {
+            "trait": "모든 것의 연결고리를 보는",
+            "description": "당신은 우연이란 없다고 믿습니다. 모든 것에는 이유가 있고, 우리는 더 큰 그림의 일부입니다. 이 믿음이 당신에게 안정감을 줍니다."
+        },
+        "en": {
+            "trait": "seeing connections in everything",
+            "description": "You believe nothing happens by accident. Everything has a reason, and we're all part of a larger picture. This belief gives you stability."
+        }
+    },
+    "consistency": {
+        "ko": {
+            "trait": "공정함을 지키는",
+            "description": "당신에게는 예측 가능하고 공정한 세상이 중요합니다. 모든 사람을 동등하게 대하며, 명확한 규칙이 모두에게 최선이라고 믿습니다."
+        },
+        "en": {
+            "trait": "upholding fairness",
+            "description": "A predictable and fair world matters to you. You treat everyone equally and believe clear rules are best for all."
+        }
+    },
+    "context": {
+        "ko": {
+            "trait": "과거에서 지혜를 찾는",
+            "description": "당신은 현재를 이해하기 위해 과거를 돌아봅니다. 역사의 패턴을 읽고, 그 속에서 오늘의 답을 찾습니다."
+        },
+        "en": {
+            "trait": "finding wisdom in the past",
+            "description": "You look back to understand the present. You read patterns in history and find today's answers within them."
+        }
+    },
+    "deliberative": {
+        "ko": {
+            "trait": "신중하게 결정하는",
+            "description": "당신은 결정을 내리기 전에 모든 것을 꼼꼼히 검토합니다. 위험을 예측하고 대비하는 당신의 신중함이 팀을 안전하게 지킵니다."
+        },
+        "en": {
+            "trait": "deciding with care",
+            "description": "You carefully examine everything before making decisions. Your prudence in anticipating and preparing for risks keeps teams safe."
+        }
+    },
+    "developer": {
+        "ko": {
+            "trait": "타인의 성장을 이끄는",
+            "description": "당신은 다른 사람들의 잠재력을 봅니다. 작은 발전도 놓치지 않고 격려하며, 성장의 기쁨을 함께 나눕니다."
+        },
+        "en": {
+            "trait": "nurturing others' growth",
+            "description": "You see potential in others. You notice even small progress, offer encouragement, and share the joy of growth."
+        }
+    },
+    "discipline": {
+        "ko": {
+            "trait": "질서정연하게 나아가는",
+            "description": "당신은 구조와 루틴 속에서 힘을 얻습니다. 세상을 예측 가능하게 만들고, 계획대로 진행되도록 관리하는 능력이 있습니다."
+        },
+        "en": {
+            "trait": "advancing with order",
+            "description": "You draw strength from structure and routine. You have the ability to make the world predictable and manage things according to plan."
+        }
+    },
+    "empathy": {
+        "ko": {
+            "trait": "타인의 감정을 느끼는",
+            "description": "당신은 다른 사람들의 감정을 자신의 것처럼 느낍니다. 말하지 않아도 그들의 마음을 이해하고, 따뜻한 위로를 건넵니다."
+        },
+        "en": {
+            "trait": "feeling others' emotions",
+            "description": "You feel others' emotions as your own. You understand their hearts without words and offer warm comfort."
+        }
+    },
+    "focus": {
+        "ko": {
+            "trait": "목표를 향해 집중하는",
+            "description": "당신은 매일 '내가 어디로 향하고 있는가?'를 자문합니다. 명확한 목표를 설정하고, 그것을 향해 흔들림 없이 나아갑니다."
+        },
+        "en": {
+            "trait": "focusing on goals",
+            "description": "You ask yourself daily 'Where am I headed?' You set clear goals and move toward them without wavering."
+        }
+    },
+    "futuristic": {
+        "ko": {
+            "trait": "미래를 꿈꾸는",
+            "description": "당신은 아직 존재하지 않는 것을 상상하며 영감을 얻습니다. '만약 ~라면 어떨까?'라는 질문이 당신을 설레게 합니다."
+        },
+        "en": {
+            "trait": "dreaming of the future",
+            "description": "You're inspired by imagining what doesn't yet exist. The question 'What if...?' excites you."
+        }
+    },
+    "harmony": {
+        "ko": {
+            "trait": "조화를 이루어가는",
+            "description": "당신은 갈등보다 합의를 추구합니다. 서로 다른 의견 속에서 공통점을 찾고, 모두가 함께할 수 있는 길을 만듭니다."
+        },
+        "en": {
+            "trait": "creating harmony",
+            "description": "You seek consensus over conflict. You find common ground among different opinions and create paths everyone can follow."
+        }
+    },
+    "ideation": {
+        "ko": {
+            "trait": "창의적 아이디어로 빛나는",
+            "description": "당신은 새로운 연결고리를 발견하는 것에 매료됩니다. 복잡한 것을 단순하게, 익숙한 것을 새롭게 바라보는 능력이 있습니다."
+        },
+        "en": {
+            "trait": "shining with creative ideas",
+            "description": "You're fascinated by discovering new connections. You have the ability to simplify complexity and see familiar things in new ways."
+        }
+    },
+    "includer": {
+        "ko": {
+            "trait": "모두를 품는",
+            "description": "당신은 '소외된 사람은 없어야 한다'고 믿습니다. 테두리를 넓혀 모두를 포함시키고, 각자가 소속감을 느끼게 합니다."
+        },
+        "en": {
+            "trait": "embracing everyone",
+            "description": "You believe 'No one should be left out.' You expand the circle to include all and help each person feel they belong."
+        }
+    },
+    "individualization": {
+        "ko": {
+            "trait": "개인의 독특함을 알아보는",
+            "description": "당신은 사람들을 일반화하지 않습니다. 각 개인의 고유한 특성을 파악하고, 그에 맞는 접근 방식을 찾습니다."
+        },
+        "en": {
+            "trait": "recognizing individual uniqueness",
+            "description": "You don't generalize people. You identify each person's unique characteristics and find approaches that fit them."
+        }
+    },
+    "input": {
+        "ko": {
+            "trait": "지식을 모으는",
+            "description": "당신은 호기심이 넘칩니다. 정보, 아이디어, 물건 등 무엇이든 수집하고 보관합니다. 언젠가 유용할 것을 알기 때문입니다."
+        },
+        "en": {
+            "trait": "collecting knowledge",
+            "description": "You overflow with curiosity. You collect and store information, ideas, objects—knowing they'll be useful someday."
+        }
+    },
+    "intellection": {
+        "ko": {
+            "trait": "깊이 생각하는",
+            "description": "당신은 혼자만의 시간에 깊이 사색합니다. 자기 성찰과 지적 토론을 즐기며, 생각의 근육을 단련합니다."
+        },
+        "en": {
+            "trait": "thinking deeply",
+            "description": "You contemplate deeply in solitude. You enjoy self-reflection and intellectual discussion, exercising your thinking muscles."
+        }
+    },
+    "learner": {
+        "ko": {
+            "trait": "끊임없이 배우는",
+            "description": "당신에게 배움의 과정 자체가 설렘입니다. 무지에서 능숙함으로 가는 여정이 당신에게 활력을 줍니다."
+        },
+        "en": {
+            "trait": "continuously learning",
+            "description": "The process of learning itself excites you. The journey from ignorance to competence energizes you."
+        }
+    },
+    "maximizer": {
+        "ko": {
+            "trait": "탁월함을 추구하는",
+            "description": "당신은 '좋은' 것을 '최고'로 만들고 싶어합니다. 강점에 집중하여 잠재력을 극대화하는 것이 당신의 방식입니다."
+        },
+        "en": {
+            "trait": "pursuing excellence",
+            "description": "You want to transform 'good' into 'best.' Your approach is to focus on strengths and maximize potential."
+        }
+    },
+    "positivity": {
+        "ko": {
+            "trait": "긍정의 에너지를 퍼뜨리는",
+            "description": "당신은 삶의 밝은 면을 봅니다. 열정과 유머로 주변 사람들을 고무시키고, 함께 있으면 기분이 좋아지게 합니다."
+        },
+        "en": {
+            "trait": "spreading positive energy",
+            "description": "You see the bright side of life. You inspire those around you with enthusiasm and humor, making people feel good in your presence."
+        }
+    },
+    "relator": {
+        "ko": {
+            "trait": "깊은 관계를 맺는",
+            "description": "당신은 이미 아는 사람들과의 관계를 더 깊게 만들고 싶어합니다. 진정한 친밀함을 추구하며, 신뢰와 진실성을 중요시합니다."
+        },
+        "en": {
+            "trait": "building deep relationships",
+            "description": "You want to deepen relationships with people you already know. You seek genuine intimacy and value trust and authenticity."
+        }
+    },
+    "responsibility": {
+        "ko": {
+            "trait": "책임감으로 빛나는",
+            "description": "당신이 한번 맡은 일은 반드시 완수합니다. 말한 대로 행동하며, 그것이 당신의 명예와 직결된다고 느낍니다."
+        },
+        "en": {
+            "trait": "shining with responsibility",
+            "description": "Once you commit, you complete it without fail. You act as you speak, feeling it's directly tied to your honor."
+        }
+    },
+    "restorative": {
+        "ko": {
+            "trait": "문제를 해결하는",
+            "description": "당신은 문제를 발견하고 해결하는 것을 좋아합니다. 망가진 것을 고치고, 상황을 원래대로 복구하는 데서 만족을 느낍니다."
+        },
+        "en": {
+            "trait": "solving problems",
+            "description": "You love finding and fixing problems. You find satisfaction in repairing what's broken and restoring situations."
+        }
+    },
+    "self-assurance": {
+        "ko": {
+            "trait": "자신을 믿는",
+            "description": "당신은 자신의 능력과 판단을 신뢰합니다. 내면의 나침반이 있어서, 어떤 결정이든 자신 있게 내릴 수 있습니다."
+        },
+        "en": {
+            "trait": "believing in yourself",
+            "description": "You trust your abilities and judgment. With an inner compass, you can make any decision with confidence."
+        }
+    },
+    "significance": {
+        "ko": {
+            "trait": "의미 있는 삶을 사는",
+            "description": "당신은 중요한 사람으로 인정받고 싶어합니다. 세상에 영향을 미치고, 기억될 만한 일을 하고자 합니다."
+        },
+        "en": {
+            "trait": "living a meaningful life",
+            "description": "You want to be recognized as significant. You aim to impact the world and do things worth remembering."
+        }
+    },
+    "strategic": {
+        "ko": {
+            "trait": "전략적으로 길을 찾는",
+            "description": "당신은 목적지까지 가는 여러 경로를 봅니다. 장애물을 예측하고, 최선의 길을 선택하는 전략적 사고가 탁월합니다."
+        },
+        "en": {
+            "trait": "finding strategic paths",
+            "description": "You see multiple routes to any destination. You excel at anticipating obstacles and choosing the best path."
+        }
+    },
+    "woo": {
+        "ko": {
+            "trait": "사람들의 마음을 사로잡는",
+            "description": "당신은 낯선 사람을 만나 그들의 마음을 얻는 것을 즐깁니다. 얼음을 깨고 연결을 만드는 데 타고난 재능이 있습니다."
+        },
+        "en": {
+            "trait": "winning others over",
+            "description": "You enjoy meeting strangers and winning them over. You have a natural gift for breaking the ice and making connections."
+        }
+    }
+}

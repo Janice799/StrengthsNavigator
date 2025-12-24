@@ -1,380 +1,543 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
-import CardPreview from '@/components/card/CardPreview';
-import SnowEffect from '@/components/effects/SnowEffect';
-import StarsEffect from '@/components/effects/StarsEffect';
-import FireworksEffect from '@/components/effects/FireworksEffect';
 import ScratchCard from '@/components/effects/ScratchCard';
-import { decodeCardData, CardData } from '@/lib/cardEncoder';
-import { getOccasionById } from '@/lib/occasions';
-import { getStrengthById } from '@/lib/strengths';
-import { getArchetypeById } from '@/lib/archetypes';
+import coachProfile from '@/config/coach_profile.json';
+import i18n from '@/config/i18n.json';
+import strengthsI18n from '@/config/strengths_i18n.json';
+import { saveCardReply } from '@/lib/supabase';
 
-function CardContent() {
-    const searchParams = useSearchParams();
-    const [cardData, setCardData] = useState<CardData | null>(null);
-    const [isRevealed, setIsRevealed] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [showReplyForm, setShowReplyForm] = useState(false);
-    const [replyMessage, setReplyMessage] = useState('');
-    const [replySent, setReplySent] = useState(false);
+type Language = 'ko' | 'en';
+type I18nTexts = typeof i18n.ko;
 
-    // 스크래치 모드 확인
-    const mode = searchParams.get('mode');
-    const isScratchMode = mode === 'scratch';
+// 다국어 강점 정보
+const STRENGTHS: Record<string, { name: string; emoji: string }> = {
+    'achiever': { name: '성취', emoji: '🏆' },
+    'activator': { name: '활성화', emoji: '⚡' },
+    'adaptability': { name: '적응성', emoji: '🌊' },
+    'analytical': { name: '분석', emoji: '🔍' },
+    'arranger': { name: '배열', emoji: '🧩' },
+    'belief': { name: '신념', emoji: '💫' },
+    'command': { name: '지휘', emoji: '👑' },
+    'communication': { name: '커뮤니케이션', emoji: '💬' },
+    'competition': { name: '경쟁', emoji: '🏅' },
+    'connectedness': { name: '연결성', emoji: '🔗' },
+    'consistency': { name: '일관성', emoji: '⚖️' },
+    'context': { name: '맥락', emoji: '📚' },
+    'deliberative': { name: '심사숙고', emoji: '🤔' },
+    'developer': { name: '성장촉진', emoji: '🌱' },
+    'discipline': { name: '규율', emoji: '📋' },
+    'empathy': { name: '공감', emoji: '💝' },
+    'focus': { name: '집중', emoji: '🎯' },
+    'futuristic': { name: '미래지향', emoji: '🔮' },
+    'harmony': { name: '화합', emoji: '🤝' },
+    'ideation': { name: '아이디어', emoji: '💡' },
+    'includer': { name: '포용', emoji: '🤗' },
+    'individualization': { name: '개별화', emoji: '👤' },
+    'input': { name: '수집', emoji: '📥' },
+    'intellection': { name: '지적사고', emoji: '🧠' },
+    'learner': { name: '학습', emoji: '📖' },
+    'maximizer': { name: '극대화', emoji: '📈' },
+    'positivity': { name: '긍정', emoji: '😊' },
+    'relator': { name: '친밀', emoji: '❤️' },
+    'responsibility': { name: '책임', emoji: '✓' },
+    'restorative': { name: '복구', emoji: '🔧' },
+    'self-assurance': { name: '자기확신', emoji: '💪' },
+    'significance': { name: '중요성', emoji: '⭐' },
+    'strategic': { name: '전략', emoji: '♟️' },
+    'woo': { name: '사교', emoji: '🎉' },
+};
+
+// 별 애니메이션
+function FloatingStars() {
+    const [stars, setStars] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number; duration: number }>>([]);
 
     useEffect(() => {
-        const encoded = searchParams.get('data');
-        if (!encoded) {
-            setError('카드 데이터가 없습니다.');
-            return;
-        }
-
-        const decoded = decodeCardData(encoded);
-        if (!decoded) {
-            setError('카드를 불러올 수 없습니다.');
-            return;
-        }
-
-        setCardData(decoded);
-    }, [searchParams]);
-
-    const occasion = cardData?.occasionId ? getOccasionById(cardData.occasionId) : null;
-    const strength = cardData?.strengthId ? getStrengthById(cardData.strengthId) : null;
-    const archetype = cardData?.archetypeId ? getArchetypeById(cardData.archetypeId) : null;
-
-    const handleReveal = () => {
-        setIsRevealed(true);
-    };
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4">
-                <div className="glass rounded-2xl p-8 text-center max-w-md">
-                    <p className="text-4xl mb-4">😢</p>
-                    <h2 className="text-xl font-bold text-white mb-2">앗!</h2>
-                    <p className="text-white/70 mb-6">{error}</p>
-                    <Link href="/" className="text-gold-400 hover:text-gold-300">
-                        홈으로 돌아가기 →
-                    </Link>
-                </div>
-            </div>
-        );
-    }
-
-    if (!cardData) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-white/60">로딩 중...</div>
-            </div>
-        );
-    }
-
-    // 스크래치 카드 내부 컨텐츠
-    const ScratchContent = () => (
-        <div className="text-center text-white p-2">
-            <div className="text-3xl mb-2">{occasion?.icon || '✨'}</div>
-            <div className="text-gold-400 font-elegant font-medium text-sm mb-1">
-                {strength?.name.ko || archetype?.name.ko || '특별한 메시지'}
-            </div>
-            <p className="text-white/80 text-xs leading-relaxed">
-                {cardData.recipientName}님을 위한<br />
-                마음을 담은 카드가<br />
-                도착했습니다! 💌
-            </p>
-        </div>
-    );
+        const generatedStars = Array.from({ length: 40 }, (_, i) => ({
+            id: i,
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 3 + 1,
+            delay: Math.random() * 5,
+            duration: Math.random() * 3 + 2,
+        }));
+        setStars(generatedStars);
+    }, []);
 
     return (
-        <>
-            {/* 배경 효과 */}
-            <StarsEffect count={60} />
-            {occasion?.effect === 'snow' && <SnowEffect count={120} />}
-            {isRevealed && <FireworksEffect duration={4000} />}
-
-            <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
-                <AnimatePresence mode="wait">
-                    {!isRevealed ? (
-                        <motion.div
-                            key="hidden"
-                            className="text-center"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9, y: -50 }}
-                        >
-                            {isScratchMode ? (
-                                /* 스크래치 카드 모드 */
-                                <>
-                                    <motion.p
-                                        className="text-white/60 mb-4 text-sm"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                    >
-                                        {cardData.recipientName}님에게 도착한 메시지
-                                    </motion.p>
-
-                                    <ScratchCard
-                                        width={320}
-                                        height={200}
-                                        revealPercent={45}
-                                        onComplete={handleReveal}
-                                    >
-                                        <ScratchContent />
-                                    </ScratchCard>
-
-                                    <motion.p
-                                        className="mt-6 text-white/50 text-sm"
-                                        animate={{ opacity: [0.3, 0.7, 0.3] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        ✨ 긁어서 카드를 확인하세요! ✨
-                                    </motion.p>
-                                </>
-                            ) : (
-                                /* 봉투 클릭 모드 (기존) */
-                                <>
-                                    <motion.div
-                                        className="relative cursor-pointer group"
-                                        onClick={handleReveal}
-                                        whileHover={{ scale: 1.05, y: -5 }}
-                                        whileTap={{ scale: 0.98 }}
-                                    >
-                                        <div className="w-72 h-48 glass rounded-xl relative overflow-hidden">
-                                            {/* 봉투 본체 */}
-                                            <div
-                                                className="absolute inset-0"
-                                                style={{
-                                                    background: `linear-gradient(145deg, ${occasion?.colors.primary || '#1e3a5f'}, ${occasion?.colors.secondary || '#0c1a2b'})`
-                                                }}
-                                            />
-
-                                            {/* 봉투 덮개 */}
-                                            <div
-                                                className="absolute top-0 left-0 right-0 h-24 origin-top"
-                                                style={{
-                                                    background: `linear-gradient(180deg, ${occasion?.colors.primary || '#1e3a5f'} 0%, ${occasion?.colors.secondary || '#0c1a2b'} 100%)`,
-                                                    clipPath: 'polygon(0 0, 100% 0, 50% 100%)'
-                                                }}
-                                            />
-
-                                            {/* 씰 */}
-                                            <motion.div
-                                                className="absolute top-16 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center"
-                                                style={{ backgroundColor: occasion?.colors.accent || '#d4af37' }}
-                                                animate={{
-                                                    boxShadow: [
-                                                        '0 0 10px rgba(212, 175, 55, 0.5)',
-                                                        '0 0 20px rgba(212, 175, 55, 0.8)',
-                                                        '0 0 10px rgba(212, 175, 55, 0.5)'
-                                                    ]
-                                                }}
-                                                transition={{ duration: 2, repeat: Infinity }}
-                                            >
-                                                <span className="text-xl">{occasion?.icon || '✉️'}</span>
-                                            </motion.div>
-
-                                            {/* 수신자 이름 */}
-                                            <div className="absolute bottom-4 left-0 right-0 text-center">
-                                                <p className="text-white/60 text-xs">To.</p>
-                                                <p className="text-gold-400 font-medium">{cardData.recipientName}</p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-
-                                    {/* 안내 텍스트 */}
-                                    <motion.p
-                                        className="mt-8 text-white/60"
-                                        animate={{ opacity: [0.5, 1, 0.5] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        클릭하여 카드를 열어보세요 ✨
-                                    </motion.p>
-                                </>
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="card"
-                            initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
-                            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                            transition={{ duration: 0.8, type: 'spring' }}
-                            className="w-full max-w-lg"
-                        >
-                            <CardPreview data={cardData} showAnimation={true} />
-
-                            {/* 코치 프로필 섹션 */}
-                            {cardData.coach && (
-                                <motion.div
-                                    className="mt-8 glass rounded-2xl p-6 text-center"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.8 }}
-                                >
-                                    <p className="text-white/40 text-xs tracking-widest uppercase mb-3">
-                                        From Your Coach
-                                    </p>
-
-                                    {/* 코치 이름 & 타이틀 */}
-                                    <div className="mb-4">
-                                        <h3 className="text-xl font-elegant font-semibold text-gold-gradient">
-                                            {cardData.coach.name}
-                                        </h3>
-                                        <p className="text-white/60 text-sm mt-1">
-                                            {cardData.coach.title}
-                                        </p>
-                                    </div>
-
-                                    {/* 코치 소개 */}
-                                    {cardData.coach.introduction && (
-                                        <p className="text-white/70 text-sm leading-relaxed mb-4">
-                                            {cardData.coach.introduction}
-                                        </p>
-                                    )}
-
-                                    {/* 구분선 */}
-                                    <div className="divider-elegant w-16 mx-auto mb-4" />
-
-                                    {/* 연락처 링크 */}
-                                    {cardData.coach.contact && (
-                                        <div className="flex justify-center gap-3">
-                                            {cardData.coach.contact.email && (
-                                                <a
-                                                    href={`mailto:${cardData.coach.contact.email}`}
-                                                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 hover:scale-105 transition-all border border-white/10"
-                                                    title="이메일"
-                                                >
-                                                    <span className="text-lg">✉️</span>
-                                                </a>
-                                            )}
-                                            {cardData.coach.contact.instagram && (
-                                                <a
-                                                    href={`https://instagram.com/${cardData.coach.contact.instagram.replace('@', '')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 hover:scale-105 transition-all border border-white/10"
-                                                    title="인스타그램"
-                                                >
-                                                    <span className="text-lg">📸</span>
-                                                </a>
-                                            )}
-                                            {cardData.coach.contact.kakao && (
-                                                <a
-                                                    href={cardData.coach.contact.kakao}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 hover:scale-105 transition-all border border-white/10"
-                                                    title="카카오톡"
-                                                >
-                                                    <span className="text-lg">💬</span>
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {/* 답장하기 섹션 */}
-                            <motion.div
-                                className="mt-8 w-full"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 1.0 }}
-                            >
-                                {!showReplyForm && !replySent && (
-                                    <motion.button
-                                        onClick={() => setShowReplyForm(true)}
-                                        className="w-full py-4 glass rounded-2xl text-white hover:bg-white/10 transition-colors border border-white/10"
-                                        whileHover={{ scale: 1.01 }}
-                                        whileTap={{ scale: 0.99 }}
-                                    >
-                                        <span className="flex items-center justify-center gap-2">
-                                            <span className="text-xl">💌</span>
-                                            감사 인사 보내기
-                                        </span>
-                                    </motion.button>
-                                )}
-
-                                {showReplyForm && !replySent && (
-                                    <motion.div
-                                        className="glass rounded-2xl p-6"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                    >
-                                        <h4 className="text-lg font-medium text-white mb-4 text-center">
-                                            💌 한마디 남기기
-                                        </h4>
-                                        <textarea
-                                            value={replyMessage}
-                                            onChange={(e) => setReplyMessage(e.target.value)}
-                                            placeholder="감사의 마음을 전해보세요..."
-                                            rows={4}
-                                            className="w-full px-4 py-3 glass rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none mb-4"
-                                        />
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={() => setShowReplyForm(false)}
-                                                className="flex-1 py-3 glass rounded-xl text-white/60 hover:bg-white/5 transition-colors"
-                                            >
-                                                취소
-                                            </button>
-                                            <motion.button
-                                                onClick={() => {
-                                                    // TODO: 실제 이메일 전송 또는 Supabase 저장 구현
-                                                    if (cardData?.coach?.contact?.email) {
-                                                        const subject = encodeURIComponent(`[답장] ${cardData.recipientName}님으로부터 메시지가 도착했습니다`);
-                                                        const body = encodeURIComponent(`${replyMessage}\n\n---\n${cardData.recipientName} 드림`);
-                                                        window.open(`mailto:${cardData.coach.contact.email}?subject=${subject}&body=${body}`);
-                                                    }
-                                                    setReplySent(true);
-                                                    setShowReplyForm(false);
-                                                }}
-                                                disabled={!replyMessage.trim()}
-                                                className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-medium rounded-xl disabled:opacity-50"
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                            >
-                                                보내기 ✨
-                                            </motion.button>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                {replySent && (
-                                    <motion.div
-                                        className="glass rounded-2xl p-6 text-center"
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                    >
-                                        <span className="text-4xl mb-3 block">💛</span>
-                                        <p className="text-gold-400 font-medium">메시지가 전송되었어요!</p>
-                                        <p className="text-white/60 text-sm mt-1">곧 확인할게요 😊</p>
-                                    </motion.div>
-                                )}
-                            </motion.div>
-
-
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </>
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            {stars.map((star) => (
+                <motion.div
+                    key={star.id}
+                    className="absolute rounded-full bg-white"
+                    style={{
+                        left: `${star.x}%`,
+                        top: `${star.y}%`,
+                        width: star.size,
+                        height: star.size,
+                    }}
+                    animate={{
+                        opacity: [0.2, 0.8, 0.2],
+                        scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                        duration: star.duration,
+                        delay: star.delay,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                    }}
+                />
+            ))}
+        </div>
     );
 }
 
-export default function CardPage() {
+// 코치 프로필 컴포넌트
+function CoachProfile({ onReply }: { onReply: () => void }) {
     return (
-        <main className="min-h-screen relative">
-            <Suspense fallback={
-                <div className="min-h-screen flex items-center justify-center">
-                    <div className="text-white/60">로딩 중...</div>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass rounded-2xl p-6 max-w-md mx-auto"
+        >
+            <div className="flex items-center gap-4 mb-4">
+                {/* 코치 사진 */}
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-400/50 flex-shrink-0">
+                    <img
+                        src={coachProfile.photo}
+                        alt={coachProfile.name}
+                        className="w-full h-full object-cover"
+                    />
                 </div>
-            }>
-                <CardContent />
-            </Suspense>
+
+                {/* 코치 정보 */}
+                <div className="flex-1">
+                    <h3 className="text-white font-bold text-lg">{coachProfile.name}</h3>
+                    <p className="text-gold-400 text-sm">{coachProfile.title}</p>
+                </div>
+            </div>
+
+            {/* 코치 소개 */}
+            <p className="text-white/70 text-sm mb-4 leading-relaxed">
+                {coachProfile.introduction}
+            </p>
+
+            {/* 연락처 & 답장 버튼 */}
+            <div className="flex gap-2">
+                <button
+                    onClick={onReply}
+                    className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-all"
+                >
+                    💌 코치에게 답장하기
+                </button>
+            </div>
+
+            {/* 연락처 정보 */}
+            <div className="mt-4 pt-4 border-t border-white/10 flex justify-center gap-4 text-sm">
+                {coachProfile.website && (
+                    <a href={coachProfile.website} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-gold-400 transition-colors">
+                        🌐 홈페이지
+                    </a>
+                )}
+                {coachProfile.email && (
+                    <a href={`mailto:${coachProfile.email}`} className="text-white/50 hover:text-gold-400 transition-colors">
+                        ✉️ 이메일
+                    </a>
+                )}
+                {coachProfile.social.kakao_channel && (
+                    <a href={coachProfile.social.kakao_channel} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-gold-400 transition-colors">
+                        💬 카카오톡
+                    </a>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
+// 답장 폼 컴포넌트
+function ReplyForm({
+    recipientName,
+    cardId,
+    onClose,
+    onSuccess
+}: {
+    recipientName: string;
+    cardId?: string;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const [message, setMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!message.trim()) return;
+
+        setIsSending(true);
+        try {
+            await saveCardReply({
+                card_id: cardId,
+                recipient_name: recipientName,
+                message: message.trim(),
+            });
+            onSuccess();
+        } catch (error) {
+            console.error('답장 전송 오류:', error);
+            alert('답장 전송 중 오류가 발생했습니다.');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="glass rounded-2xl p-6 max-w-md w-full"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 className="text-xl font-bold text-white mb-4">
+                    💌 {coachProfile.name} 코치에게 답장
+                </h3>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-white/70 text-sm mb-2">
+                            보내는 분: {recipientName}
+                        </label>
+                        <textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="코치에게 전하고 싶은 말을 적어주세요..."
+                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 resize-none"
+                            rows={5}
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors"
+                        >
+                            취소
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!message.trim() || isSending}
+                            className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSending ? '전송 중...' : '답장 보내기'}
+                        </button>
+                    </div>
+                </form>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+// 카드 미리보기 컴포넌트
+function CardContent({
+    recipientName,
+    strengths,
+    situation,
+    coachMessage,
+    lang = 'ko',
+}: {
+    recipientName: string;
+    strengths: string[];
+    situation: string;
+    coachMessage: string;
+    lang?: Language;
+}) {
+    // 언어에 따른 강점 이름
+    const strengthsList = strengths.map(id => {
+        const s = strengthsI18n[id as keyof typeof strengthsI18n];
+        return s ? { name: s[lang], emoji: s.emoji } : null;
+    }).filter(Boolean);
+
+    return (
+        <div className="premium-card card-corner rounded-2xl p-3 sm:p-4 w-full h-full flex flex-col bg-gradient-to-br from-ocean-800 to-ocean-900">
+            {/* 상단: 로고 + 수신자 (컴팩트하게 한줄로) */}
+            <div className="text-center mb-1">
+                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">LIFELITERACY Selli</p>
+                <h2 className="text-gold-400 font-signature text-lg sm:text-xl">
+                    {i18n[lang].to} {recipientName || (lang === 'ko' ? '받는 분' : 'Dear Friend')}
+                </h2>
+            </div>
+
+            {/* 강점 배지 (더 컴팩트하게) */}
+            {strengthsList.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-1 mb-2">
+                    {strengthsList.map((s: any, i: number) => s && (
+                        <span key={i} className="px-1.5 py-0.5 bg-gold-500/15 border border-gold-400/20 rounded-full text-gold-400 text-[11px]">
+                            {s.emoji} {s.name}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* 상황 설명 (더 작게) */}
+            {situation && (
+                <div className="mb-1.5 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
+                    <p className="text-white/50 text-[10px] leading-relaxed font-elegant whitespace-pre-wrap text-center">
+                        {situation}
+                    </p>
+                </div>
+            )}
+
+            {/* 코치의 메시지 (메인 콘텐츠, 스크롤 가능) */}
+            <div className="flex-1 overflow-y-auto py-2 px-1">
+                <p className="text-white leading-relaxed font-elegant text-center text-sm whitespace-pre-wrap">
+                    {coachMessage || '특별한 메시지'}
+                </p>
+            </div>
+
+            {/* 구분선 */}
+            <div className="divider-elegant w-12 mx-auto my-1.5" />
+
+            {/* 코치 서명 - 골드 컬러 font-signature */}
+            <div className="text-center">
+                <p className="text-gold-400 font-signature text-base sm:text-lg">{i18n[lang].from} {coachProfile.name}</p>
+            </div>
+        </div>
+    );
+}
+
+function CardViewContent() {
+    const searchParams = useSearchParams();
+    const [isRevealed, setIsRevealed] = useState(false);
+    const [confetti, setConfetti] = useState(false);
+    const [showReplyForm, setShowReplyForm] = useState(false);
+    const [replySent, setReplySent] = useState(false);
+    const [cardSize, setCardSize] = useState({ width: 320, height: 440 });
+
+    // 반응형 카드 크기 계산
+    useEffect(() => {
+        const updateCardSize = () => {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            // 모바일: 더 작은 카드
+            if (screenWidth < 400) {
+                setCardSize({ width: Math.min(screenWidth - 32, 300), height: Math.min(screenHeight * 0.55, 420) });
+            }
+            // 태블릿
+            else if (screenWidth < 768) {
+                setCardSize({ width: Math.min(screenWidth - 48, 340), height: Math.min(screenHeight * 0.58, 460) });
+            }
+            // 데스크탑
+            else {
+                setCardSize({ width: 360, height: 500 });
+            }
+        };
+
+        updateCardSize();
+        window.addEventListener('resize', updateCardSize);
+        return () => window.removeEventListener('resize', updateCardSize);
+    }, []);
+
+    // URL 파라미터에서 카드 데이터 가져오기
+    const recipientName = searchParams.get('name') || '소중한 분';
+    const strengthsParam = searchParams.get('strengths') || searchParams.get('strength') || '';
+    const strengths = strengthsParam ? strengthsParam.split(',') : [];
+    const situation = searchParams.get('situation') || '';
+    const coachMessage = searchParams.get('message') || '당신의 강점을 응원합니다!';
+    const cardId = searchParams.get('id') || undefined;
+    const lang = (searchParams.get('lang') || 'ko') as Language;
+    const t: I18nTexts = i18n[lang];
+
+    const handleReveal = () => {
+        setIsRevealed(true);
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 3000);
+    };
+
+    const handleReplySuccess = () => {
+        setShowReplyForm(false);
+        setReplySent(true);
+    };
+
+    // 카카오톡 공유
+    const shareToKakao = () => {
+        if (typeof window !== 'undefined' && (window as any).Kakao?.Share) {
+            (window as any).Kakao.Share.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: `${recipientName}님께 강점 카드가 도착했어요! 💌`,
+                    description: '긁어서 확인해보세요 ✨',
+                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${strengths.join(',')}`,
+                    link: {
+                        mobileWebUrl: window.location.href,
+                        webUrl: window.location.href,
+                    },
+                },
+            });
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+        }
+    };
+
+    return (
+        <main className="min-h-screen relative overflow-hidden">
+            <FloatingStars />
+
+            {/* Confetti 효과 */}
+            {confetti && (
+                <div className="fixed inset-0 pointer-events-none z-50">
+                    {Array.from({ length: 50 }).map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="absolute w-3 h-3 rounded-full"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: -20,
+                                backgroundColor: ['#d4af37', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'][i % 5],
+                            }}
+                            animate={{
+                                y: [0, window.innerHeight + 100],
+                                x: [0, (Math.random() - 0.5) * 200],
+                                rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1)],
+                            }}
+                            transition={{
+                                duration: 2 + Math.random() * 2,
+                                delay: Math.random() * 0.5,
+                                ease: 'easeOut',
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* 답장 폼 모달 */}
+            <AnimatePresence>
+                {showReplyForm && (
+                    <ReplyForm
+                        recipientName={recipientName}
+                        cardId={cardId}
+                        onClose={() => setShowReplyForm(false)}
+                        onSuccess={handleReplySuccess}
+                    />
+                )}
+            </AnimatePresence>
+
+            <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
+                {/* 상단 로고 */}
+                <motion.div
+                    className="mb-6 text-center"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
+                        LIFELITERACY Selli
+                    </h1>
+                    <p className="text-white/40 text-sm mt-1">{t.cardArrived}</p>
+                </motion.div>
+
+                {/* 스크래치 카드 */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <ScratchCard
+                        width={cardSize.width}
+                        height={cardSize.height}
+                        revealPercent={40}
+                        onReveal={handleReveal}
+                    >
+                        <CardContent
+                            recipientName={recipientName}
+                            strengths={strengths}
+                            situation={situation}
+                            coachMessage={coachMessage}
+                            lang={lang}
+                        />
+                    </ScratchCard>
+                </motion.div>
+
+                {/* 카드 공개 후: 코치 프로필 + 답장 */}
+                {isRevealed && (
+                    <div className="mt-8 w-full max-w-md space-y-6">
+                        {/* 답장 성공 메시지 */}
+                        {replySent && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center"
+                            >
+                                <p className="text-green-400 font-medium">✅ 답장이 코치에게 전달되었습니다!</p>
+                            </motion.div>
+                        )}
+
+                        {/* 코치 프로필 */}
+                        <CoachProfile onReply={() => setShowReplyForm(true)} />
+
+                        {/* 공유 버튼 */}
+                        <motion.div
+                            className="flex gap-3"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                        >
+                            <button
+                                onClick={shareToKakao}
+                                className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2"
+                            >
+                                💬 {t.kakaoShare}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    alert(t.linkCopied);
+                                }}
+                                className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors"
+                            >
+                                🔗 {t.copyLink}
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* 하단 안내 */}
+                {!isRevealed && (
+                    <motion.div
+                        className="mt-6 text-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                    >
+                        <p className="text-white/50 text-sm">
+                            {t.scratchHint}
+                        </p>
+                    </motion.div>
+                )}
+            </div>
         </main>
+    );
+}
+
+export default function CardViewPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-ocean-900">
+                <div className="text-white">로딩 중...</div>
+            </div>
+        }>
+            <CardViewContent />
+        </Suspense>
     );
 }

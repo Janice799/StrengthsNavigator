@@ -1,0 +1,172 @@
+{
+    "achiever": {
+        "ko": "성취",
+        "en": "Achiever",
+        "emoji": "🏆"
+    },
+    "activator": {
+        "ko": "활성화",
+        "en": "Activator",
+        "emoji": "⚡"
+    },
+    "adaptability": {
+        "ko": "적응성",
+        "en": "Adaptability",
+        "emoji": "🌊"
+    },
+    "analytical": {
+        "ko": "분석",
+        "en": "Analytical",
+        "emoji": "🔍"
+    },
+    "arranger": {
+        "ko": "배열",
+        "en": "Arranger",
+        "emoji": "🧩"
+    },
+    "belief": {
+        "ko": "신념",
+        "en": "Belief",
+        "emoji": "💫"
+    },
+    "command": {
+        "ko": "지휘",
+        "en": "Command",
+        "emoji": "👑"
+    },
+    "communication": {
+        "ko": "커뮤니케이션",
+        "en": "Communication",
+        "emoji": "💬"
+    },
+    "competition": {
+        "ko": "경쟁",
+        "en": "Competition",
+        "emoji": "🏅"
+    },
+    "connectedness": {
+        "ko": "연결성",
+        "en": "Connectedness",
+        "emoji": "🔗"
+    },
+    "consistency": {
+        "ko": "일관성",
+        "en": "Consistency",
+        "emoji": "⚖️"
+    },
+    "context": {
+        "ko": "맥락",
+        "en": "Context",
+        "emoji": "📚"
+    },
+    "deliberative": {
+        "ko": "심사숙고",
+        "en": "Deliberative",
+        "emoji": "🤔"
+    },
+    "developer": {
+        "ko": "성장촉진",
+        "en": "Developer",
+        "emoji": "🌱"
+    },
+    "discipline": {
+        "ko": "규율",
+        "en": "Discipline",
+        "emoji": "📋"
+    },
+    "empathy": {
+        "ko": "공감",
+        "en": "Empathy",
+        "emoji": "💝"
+    },
+    "focus": {
+        "ko": "집중",
+        "en": "Focus",
+        "emoji": "🎯"
+    },
+    "futuristic": {
+        "ko": "미래지향",
+        "en": "Futuristic",
+        "emoji": "🔮"
+    },
+    "harmony": {
+        "ko": "화합",
+        "en": "Harmony",
+        "emoji": "🤝"
+    },
+    "ideation": {
+        "ko": "아이디어",
+        "en": "Ideation",
+        "emoji": "💡"
+    },
+    "includer": {
+        "ko": "포용",
+        "en": "Includer",
+        "emoji": "🤗"
+    },
+    "individualization": {
+        "ko": "개별화",
+        "en": "Individualization",
+        "emoji": "👤"
+    },
+    "input": {
+        "ko": "수집",
+        "en": "Input",
+        "emoji": "📥"
+    },
+    "intellection": {
+        "ko": "지적사고",
+        "en": "Intellection",
+        "emoji": "🧠"
+    },
+    "learner": {
+        "ko": "학습",
+        "en": "Learner",
+        "emoji": "📖"
+    },
+    "maximizer": {
+        "ko": "극대화",
+        "en": "Maximizer",
+        "emoji": "📈"
+    },
+    "positivity": {
+        "ko": "긍정",
+        "en": "Positivity",
+        "emoji": "😊"
+    },
+    "relator": {
+        "ko": "친밀",
+        "en": "Relator",
+        "emoji": "❤️"
+    },
+    "responsibility": {
+        "ko": "책임",
+        "en": "Responsibility",
+        "emoji": "✓"
+    },
+    "restorative": {
+        "ko": "복구",
+        "en": "Restorative",
+        "emoji": "🔧"
+    },
+    "self-assurance": {
+        "ko": "자기확신",
+        "en": "Self-Assurance",
+        "emoji": "💪"
+    },
+    "significance": {
+        "ko": "중요성",
+        "en": "Significance",
+        "emoji": "⭐"
+    },
+    "strategic": {
+        "ko": "전략",
+        "en": "Strategic",
+        "emoji": "♟️"
+    },
+    "woo": {
+        "ko": "사교",
+        "en": "Woo",
+        "emoji": "🎉"
+    }
+}

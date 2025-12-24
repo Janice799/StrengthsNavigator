@@ -1,39 +1,107 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 interface ScratchCardProps {
     width?: number;
     height?: number;
-    coverImage?: string;
-    brushRadius?: number;
+    coverColor?: string;
+    brushSize?: number;
     revealPercent?: number;
-    onComplete?: () => void;
+    onReveal?: () => void;
     children: React.ReactNode;
 }
 
-/**
- * 스크래치 카드 컴포넌트
- * Canvas API를 사용하여 직접 구현
- * - 긁으면 숨겨진 메시지 공개
- * - 진행률 추적
- * - 완료 시 콜백
- */
 export default function ScratchCard({
-    width = 300,
-    height = 200,
-    coverImage,
-    brushRadius = 25,
+    width = 350,
+    height = 500,
+    coverColor = '#d4af37',
+    brushSize = 40,
     revealPercent = 50,
-    onComplete = () => { },
+    onReveal,
     children
 }: ScratchCardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const [isScratching, setIsScratching] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const lastPoint = useRef<{ x: number; y: number } | null>(null);
+    const [scratchedPercent, setScratchedPercent] = useState(0);
+
+    // 선물 포장지 패턴 그리기
+    const drawCover = useCallback((ctx: CanvasRenderingContext2D) => {
+        // 배경색
+        ctx.fillStyle = coverColor;
+        ctx.fillRect(0, 0, width, height);
+
+        // 리본 패턴
+        ctx.fillStyle = '#b8972e';
+
+        // 수직 리본
+        ctx.fillRect(width / 2 - 20, 0, 40, height);
+
+        // 수평 리본
+        ctx.fillRect(0, height / 2 - 20, width, 40);
+
+        // 리본 하이라이트
+        ctx.fillStyle = '#e6c847';
+        ctx.fillRect(width / 2 - 15, 0, 10, height);
+        ctx.fillRect(0, height / 2 - 15, width, 10);
+
+        // 반짝이 점들
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const size = Math.random() * 4 + 1;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 별 장식
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        const drawStar = (cx: number, cy: number, size: number) => {
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                const x = cx + Math.cos(angle) * size;
+                const y = cy + Math.sin(angle) * size;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        };
+
+        drawStar(width * 0.2, height * 0.3, 15);
+        drawStar(width * 0.8, height * 0.2, 12);
+        drawStar(width * 0.15, height * 0.7, 10);
+        drawStar(width * 0.85, height * 0.75, 14);
+
+        // 텍스트 안내
+        ctx.font = 'bold 18px Pretendard, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.textAlign = 'center';
+        ctx.fillText('✨ 긁어서 확인하세요 ✨', width / 2, height - 40);
+
+        // 리본 중앙 장식 (리본 묶음)
+        ctx.fillStyle = '#c9a732';
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, 35, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#e6c847';
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillStyle = '#8b6914';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎁', width / 2, height / 2);
+
+    }, [width, height, coverColor]);
 
     // 캔버스 초기화
     useEffect(() => {
@@ -43,156 +111,139 @@ export default function ScratchCard({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        if (coverImage) {
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, width, height);
-            };
-            img.src = coverImage;
-        } else {
-            // 그라디언트 배경
-            const gradient = ctx.createLinearGradient(0, 0, width, height);
-            gradient.addColorStop(0, '#8b5cf6');
-            gradient.addColorStop(0.5, '#d4af37');
-            gradient.addColorStop(1, '#3b82f6');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, width, height);
+        drawCover(ctx);
+    }, [drawCover]);
 
-            // 텍스트 추가
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.font = 'bold 16px "Pretendard Variable", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('✨ 긁어서 확인하세요! ✨', width / 2, height / 2);
-        }
-    }, [width, height, coverImage]);
-
-    // 진행률 계산
-    const calculateProgress = useCallback(() => {
+    // 긁힌 비율 계산
+    const calculateScratchedPercent = useCallback(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return 0;
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) return 0;
 
         const imageData = ctx.getImageData(0, 0, width, height);
         const pixels = imageData.data;
-        let transparent = 0;
+        let transparentPixels = 0;
 
         for (let i = 3; i < pixels.length; i += 4) {
-            if (pixels[i] === 0) transparent++;
+            if (pixels[i] === 0) transparentPixels++;
         }
 
-        const percent = (transparent / (pixels.length / 4)) * 100;
-        setProgress(Math.round(percent));
+        return (transparentPixels / (pixels.length / 4)) * 100;
+    }, [width, height]);
 
-        if (percent >= revealPercent && !isRevealed) {
-            setIsRevealed(true);
-            onComplete();
-        }
-    }, [width, height, revealPercent, isRevealed, onComplete]);
-
-    // 스크래치 (그리기)
+    // 긁기 동작
     const scratch = useCallback((x: number, y: number) => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas || isRevealed) return;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const canvasX = x - rect.left;
-        const canvasY = y - rect.top;
-
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
+        ctx.arc(x, y, brushSize, 0, Math.PI * 2);
+        ctx.fill();
 
-        if (lastPoint.current) {
-            ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
-            ctx.lineTo(canvasX, canvasY);
-        } else {
-            ctx.moveTo(canvasX, canvasY);
+        const percent = calculateScratchedPercent();
+        setScratchedPercent(percent);
+
+        if (percent >= revealPercent && !isRevealed) {
+            setIsRevealed(true);
+            onReveal?.();
         }
-
-        ctx.lineWidth = brushRadius * 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-
-        lastPoint.current = { x: canvasX, y: canvasY };
-    }, [brushRadius]);
+    }, [brushSize, revealPercent, isRevealed, onReveal, calculateScratchedPercent]);
 
     // 마우스 이벤트
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsScratching(true);
-        lastPoint.current = null;
-        scratch(e.clientX, e.clientY);
+    const getPosition = (e: React.MouseEvent | React.TouchEvent) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = width / rect.width;
+        const scaleY = height / rect.height;
+
+        if ('touches' in e) {
+            return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+            };
+        }
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isScratching) return;
-        scratch(e.clientX, e.clientY);
-    };
-
-    const handleMouseUp = () => {
-        setIsScratching(false);
-        lastPoint.current = null;
-        calculateProgress();
-    };
-
-    // 터치 이벤트
-    const handleTouchStart = (e: React.TouchEvent) => {
+    const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
         setIsScratching(true);
-        lastPoint.current = null;
-        const touch = e.touches[0];
-        scratch(touch.clientX, touch.clientY);
+        const pos = getPosition(e);
+        scratch(pos.x, pos.y);
     };
 
-    const handleTouchMove = (e: React.TouchEvent) => {
-        e.preventDefault();
+    const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!isScratching) return;
-        const touch = e.touches[0];
-        scratch(touch.clientX, touch.clientY);
+        e.preventDefault();
+        const pos = getPosition(e);
+        scratch(pos.x, pos.y);
     };
 
-    const handleTouchEnd = () => {
+    const handleEnd = () => {
         setIsScratching(false);
-        lastPoint.current = null;
-        calculateProgress();
     };
 
     return (
-        <div
-            ref={containerRef}
-            className={`relative inline-block rounded-2xl overflow-hidden shadow-2xl select-none touch-none ${isRevealed ? 'animate-pulse-once' : ''}`}
-            style={{ width, height }}
-        >
-            {/* 숨겨진 컨텐츠 */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-ocean-800 to-ocean-900 p-6">
+        <div className="relative" style={{ width, height }}>
+            {/* 카드 내용 (아래) */}
+            <div
+                className="absolute inset-0 rounded-2xl overflow-hidden"
+                style={{ opacity: isRevealed ? 1 : 0.3 }}
+            >
                 {children}
             </div>
 
-            {/* 스크래치 레이어 */}
-            <canvas
+            {/* 스크래치 캔버스 (위) */}
+            <motion.canvas
                 ref={canvasRef}
                 width={width}
                 height={height}
-                className={`absolute inset-0 cursor-grab active:cursor-grabbing rounded-2xl transition-opacity duration-500 ${isRevealed ? 'opacity-0 pointer-events-none' : ''}`}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+                className="absolute inset-0 rounded-2xl cursor-pointer touch-none"
+                style={{
+                    opacity: isRevealed ? 0 : 1,
+                    pointerEvents: isRevealed ? 'none' : 'auto',
+                    transition: 'opacity 0.5s ease'
+                }}
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={handleStart}
+                onTouchMove={handleMove}
+                onTouchEnd={handleEnd}
+                initial={{ scale: 1 }}
+                whileHover={{ scale: 1.01 }}
             />
 
             {/* 진행률 표시 */}
-            {!isRevealed && progress > 0 && (
-                <div className="absolute bottom-2 right-2 bg-black/70 text-gold-400 px-3 py-1 rounded-full text-xs font-semibold">
-                    {progress}% 공개됨
+            {!isRevealed && scratchedPercent > 0 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 px-3 py-1 rounded-full">
+                    <p className="text-white text-xs">{Math.round(scratchedPercent)}% 완료</p>
                 </div>
+            )}
+
+            {/* 완료 효과 */}
+            {isRevealed && (
+                <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+                        <span className="text-2xl">🎉</span>
+                    </div>
+                </motion.div>
             )}
         </div>
     );
