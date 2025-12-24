@@ -12,9 +12,11 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.89.0",
+    "@types/nodemailer": "^7.0.4",
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^11.13.1",
     "next": "14.2.18",
+    "nodemailer": "^7.0.12",
     "p5": "^1.11.11",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",

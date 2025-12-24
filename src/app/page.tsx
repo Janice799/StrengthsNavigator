@@ -125,7 +125,7 @@ export default function LandingPage() {
                         transition={{ delay: 0.6 }}
                     >
                         성공하는 나를 경험하는 새로운 방식<br />
-                        <span className="text-gold-400 font-bold">Lifeliteracy Selli</span>
+                        <span className="text-gold-400 font-bold">LIFELITERACY Selli</span>
                     </motion.p>
 
                     {/* CTA 버튼 - 카드 보내기 */}

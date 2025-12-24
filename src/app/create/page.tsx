@@ -327,7 +327,7 @@ export default function CardCreatorPage() {
 
         setIsSaving(true);
         try {
-            await saveSentCard({
+            const savedCard = await saveSentCard({
                 client_id: selectedClient?.id,
                 client_name: recipientName,
                 season: selectedSeason || undefined,
@@ -339,16 +339,24 @@ export default function CardCreatorPage() {
 
             // 고유 URL 생성
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            const params = new URLSearchParams({
-                name: recipientName,
-                strengths: selectedStrengths.join(','),
-                situation: situationText,
-                message: coachMessage,
-                season: selectedSeason || '',
-                lang: language,
-            });
-            const url = `${baseUrl}/card?${params.toString()}`;
-            setCardUrl(url);
+
+            if (savedCard?.id && !savedCard.id.startsWith('local-')) {
+                // DB 저장 성공 시 짧은 링크 생성
+                const url = `${baseUrl}/c/${savedCard.id}?lang=${language}`;
+                setCardUrl(url);
+            } else {
+                // 로컬 모드거나 저장 실패 시 긴 링크 (Fallback)
+                const params = new URLSearchParams({
+                    name: recipientName,
+                    strengths: selectedStrengths.join(','),
+                    situation: situationText,
+                    message: coachMessage,
+                    season: selectedSeason || '',
+                    lang: language,
+                });
+                const url = `${baseUrl}/card?${params.toString()}`;
+                setCardUrl(url);
+            }
 
             setSaveSuccess(true);
         } catch (error) {

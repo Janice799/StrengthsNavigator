@@ -38,6 +38,11 @@ export interface SentCard {
     season?: string;
     situation?: string;
     strength?: string;
+    strength_1?: string;
+    strength_2?: string;
+    strength_3?: string;
+    strength_4?: string;
+    strength_5?: string;
     situation_text?: string;
     coach_message?: string;
     sent_at: string;
@@ -165,6 +170,22 @@ export async function getCardsByClient(clientId: string): Promise<SentCard[]> {
         return [];
     }
     return data || [];
+}
+
+export async function getCardById(id: string): Promise<SentCard | null> {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+        .from('sent_cards')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        console.error('카드 조회 오류:', error);
+        return null;
+    }
+    return data;
 }
 
 // 팔로업 필요 고객 조회

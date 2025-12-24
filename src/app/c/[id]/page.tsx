@@ -1,18 +1,18 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ScratchCard from '@/components/effects/ScratchCard';
 import coachProfile from '@/config/coach_profile.json';
 import i18n from '@/config/i18n.json';
 import strengthsI18n from '@/config/strengths_i18n.json';
-import { saveCardReply } from '@/lib/supabase';
+import { saveCardReply, getCardById, SentCard } from '@/lib/supabase';
+import { useSearchParams } from 'next/navigation';
 
 type Language = 'ko' | 'en';
 type I18nTexts = typeof i18n.ko;
 
-// 다국어 강점 정보
+// 다국어 강점 정보 (card/page.tsx와 동일)
 const STRENGTHS: Record<string, { name: string; emoji: string }> = {
     'achiever': { name: '성취', emoji: '🏆' },
     'activator': { name: '활성화', emoji: '⚡' },
@@ -104,7 +104,6 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
             className="glass rounded-2xl p-6 max-w-md mx-auto"
         >
             <div className="flex items-center gap-4 mb-4">
-                {/* 코치 사진 */}
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-400/50 flex-shrink-0">
                     <img
                         src={coachProfile.photo}
@@ -112,20 +111,14 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
                         className="w-full h-full object-cover"
                     />
                 </div>
-
-                {/* 코치 정보 */}
                 <div className="flex-1">
                     <h3 className="text-white font-bold text-lg">{coachProfile.name}</h3>
                     <p className="text-gold-400 text-sm">{coachProfile.title}</p>
                 </div>
             </div>
-
-            {/* 코치 소개 */}
             <p className="text-white/70 text-sm mb-4 leading-relaxed">
                 {coachProfile.introduction}
             </p>
-
-            {/* 연락처 & 답장 버튼 */}
             <div className="flex gap-2">
                 <button
                     onClick={onReply}
@@ -134,8 +127,6 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
                     💌 코치에게 답장하기
                 </button>
             </div>
-
-            {/* 연락처 정보 */}
             <div className="mt-4 pt-4 border-t border-white/10 flex justify-center gap-4 text-sm">
                 {coachProfile.website && (
                     <a href={coachProfile.website} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-gold-400 transition-colors">
@@ -158,17 +149,7 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
 }
 
 // 답장 폼 컴포넌트
-function ReplyForm({
-    recipientName,
-    cardId,
-    onClose,
-    onSuccess
-}: {
-    recipientName: string;
-    cardId?: string;
-    onClose: () => void;
-    onSuccess: () => void;
-}) {
+function ReplyForm({ recipientName, cardId, onClose, onSuccess }: { recipientName: string; cardId?: string; onClose: () => void; onSuccess: () => void; }) {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
 
@@ -214,15 +195,10 @@ function ReplyForm({
                 className="glass rounded-2xl p-6 max-w-md w-full"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 className="text-xl font-bold text-white mb-4">
-                    💌 {coachProfile.name} 코치에게 답장
-                </h3>
-
+                <h3 className="text-xl font-bold text-white mb-4">💌 {coachProfile.name} 코치에게 답장</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-white/70 text-sm mb-2">
-                            보내는 분: {recipientName}
-                        </label>
+                        <label className="block text-white/70 text-sm mb-2">보내는 분: {recipientName}</label>
                         <textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
@@ -232,20 +208,9 @@ function ReplyForm({
                             autoFocus
                         />
                     </div>
-
                     <div className="flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors"
-                        >
-                            취소
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!message.trim() || isSending}
-                            className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
+                        <button type="button" onClick={onClose} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">취소</button>
+                        <button type="submit" disabled={!message.trim() || isSending} className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl disabled:opacity-50">
                             {isSending ? '전송 중...' : '답장 보내기'}
                         </button>
                     </div>
@@ -255,21 +220,8 @@ function ReplyForm({
     );
 }
 
-// 카드 미리보기 컴포넌트
-function CardContent({
-    recipientName,
-    strengths,
-    situation,
-    coachMessage,
-    lang = 'ko',
-}: {
-    recipientName: string;
-    strengths: string[];
-    situation: string;
-    coachMessage: string;
-    lang?: Language;
-}) {
-    // 언어에 따른 강점 이름
+// 카드 내용 컴포넌트
+function CardContent({ recipientName, strengths, situation, coachMessage, lang = 'ko' }: { recipientName: string; strengths: string[]; situation: string; coachMessage: string; lang?: Language; }) {
     const strengthsList = strengths.map(id => {
         const s = strengthsI18n[id as keyof typeof strengthsI18n];
         return s ? { name: s[lang], emoji: s.emoji } : null;
@@ -277,15 +229,12 @@ function CardContent({
 
     return (
         <div className="premium-card card-corner rounded-2xl p-3 sm:p-4 w-full h-full flex flex-col bg-gradient-to-br from-ocean-800 to-ocean-900">
-            {/* 상단: 로고 + 수신자 (컴팩트하게 한줄로) */}
             <div className="text-center mb-1">
                 <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">LIFELITERACY Selli</p>
                 <h2 className="text-gold-400 font-signature text-lg sm:text-xl">
                     {i18n[lang].to} {recipientName || (lang === 'ko' ? '받는 분' : 'Dear Friend')}
                 </h2>
             </div>
-
-            {/* 강점 배지 (더 컴팩트하게) */}
             {strengthsList.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-1 mb-2">
                     {strengthsList.map((s: any, i: number) => s && (
@@ -295,8 +244,6 @@ function CardContent({
                     ))}
                 </div>
             )}
-
-            {/* 상황 설명 (더 작게) */}
             {situation && (
                 <div className="mb-1.5 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
                     <p className="text-white/50 text-[10px] leading-relaxed font-elegant whitespace-pre-wrap text-center">
@@ -304,18 +251,12 @@ function CardContent({
                     </p>
                 </div>
             )}
-
-            {/* 코치의 메시지 (메인 콘텐츠, 스크롤 가능) */}
             <div className="flex-1 overflow-y-auto py-2 px-1">
                 <p className="text-white leading-relaxed font-elegant text-center text-sm whitespace-pre-wrap">
                     {coachMessage || '특별한 메시지'}
                 </p>
             </div>
-
-            {/* 구분선 */}
             <div className="divider-elegant w-12 mx-auto my-1.5" />
-
-            {/* 코치 서명 - 골드 컬러 font-signature */}
             <div className="text-center">
                 <p className="text-gold-400 font-signature text-base sm:text-lg">{i18n[lang].from} {coachProfile.name}</p>
             </div>
@@ -323,48 +264,47 @@ function CardContent({
     );
 }
 
-function CardViewContent() {
+function ShortCardContent({ params }: { params: { id: string } }) {
     const searchParams = useSearchParams();
+    const [cardData, setCardData] = useState<SentCard | null>(null);
+    const [loading, setLoading] = useState(true);
     const [isRevealed, setIsRevealed] = useState(false);
     const [confetti, setConfetti] = useState(false);
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [replySent, setReplySent] = useState(false);
     const [cardSize, setCardSize] = useState({ width: 320, height: 440 });
 
-    // 반응형 카드 크기 계산
+    const langParam = searchParams.get('lang');
+    const lang = (langParam === 'en' ? 'en' : 'ko') as Language;
+    const t = i18n[lang];
+
+    useEffect(() => {
+        async function loadCard() {
+            if (params.id) {
+                const data = await getCardById(params.id);
+                setCardData(data);
+            }
+            setLoading(false);
+        }
+        loadCard();
+    }, [params.id]);
+
     useEffect(() => {
         const updateCardSize = () => {
             const screenWidth = window.innerWidth;
             const screenHeight = window.innerHeight;
-
-            // 모바일: 더 작은 카드
             if (screenWidth < 400) {
                 setCardSize({ width: Math.min(screenWidth - 32, 300), height: Math.min(screenHeight * 0.55, 420) });
-            }
-            // 태블릿
-            else if (screenWidth < 768) {
+            } else if (screenWidth < 768) {
                 setCardSize({ width: Math.min(screenWidth - 48, 340), height: Math.min(screenHeight * 0.58, 460) });
-            }
-            // 데스크탑
-            else {
+            } else {
                 setCardSize({ width: 360, height: 500 });
             }
         };
-
         updateCardSize();
         window.addEventListener('resize', updateCardSize);
         return () => window.removeEventListener('resize', updateCardSize);
     }, []);
-
-    // URL 파라미터에서 카드 데이터 가져오기
-    const recipientName = searchParams.get('name') || '소중한 분';
-    const strengthsParam = searchParams.get('strengths') || searchParams.get('strength') || '';
-    const strengths = strengthsParam ? strengthsParam.split(',') : [];
-    const situation = searchParams.get('situation') || '';
-    const coachMessage = searchParams.get('message') || '당신의 강점을 응원합니다!';
-    const cardId = searchParams.get('id') || undefined;
-    const lang = (searchParams.get('lang') || 'ko') as Language;
-    const t: I18nTexts = i18n[lang];
 
     const handleReveal = () => {
         setIsRevealed(true);
@@ -377,15 +317,19 @@ function CardViewContent() {
         setReplySent(true);
     };
 
-    // 카카오톡 공유
     const shareToKakao = () => {
+        if (!cardData) return;
+        const recipientName = cardData.client_name;
+        // 강점 콤마로 분리된 문자열을 그대로 사용
+        const strengthsStr = cardData.strength || '';
+
         if (typeof window !== 'undefined' && (window as any).Kakao?.Share) {
             (window as any).Kakao.Share.sendDefault({
                 objectType: 'feed',
                 content: {
                     title: `${recipientName}님께 강점 카드가 도착했어요! 💌`,
                     description: '긁어서 확인해보세요 ✨',
-                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${strengths.join(',')}`,
+                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${strengthsStr}`,
                     link: {
                         mobileWebUrl: window.location.href,
                         webUrl: window.location.href,
@@ -398,11 +342,15 @@ function CardViewContent() {
         }
     };
 
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-ocean-900 text-white">카드를 불러오는 중...</div>;
+    if (!cardData) return <div className="min-h-screen flex items-center justify-center bg-ocean-900 text-white">존재하지 않는 카드입니다.</div>;
+
+    // 강점 데이터를 배열로 변환
+    const strengths = cardData.strength ? cardData.strength.split(',') : [];
+
     return (
         <main className="min-h-screen relative overflow-hidden">
             <FloatingStars />
-
-            {/* Confetti 효과 */}
             {confetti && (
                 <div className="fixed inset-0 pointer-events-none z-50">
                     {Array.from({ length: 50 }).map((_, i) => (
@@ -429,12 +377,11 @@ function CardViewContent() {
                 </div>
             )}
 
-            {/* 답장 폼 모달 */}
             <AnimatePresence>
                 {showReplyForm && (
                     <ReplyForm
-                        recipientName={recipientName}
-                        cardId={cardId}
+                        recipientName={cardData.client_name}
+                        cardId={cardData.id}
                         onClose={() => setShowReplyForm(false)}
                         onSuccess={handleReplySuccess}
                     />
@@ -442,94 +389,45 @@ function CardViewContent() {
             </AnimatePresence>
 
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-                {/* 상단 로고 */}
-                <motion.div
-                    className="mb-6 text-center"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
-                        LIFELITERACY Selli
-                    </h1>
+                <motion.div className="mb-6 text-center" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+                    <h1 className="text-xl font-elegant font-semibold text-gold-gradient">LIFELITERACY Selli</h1>
                     <p className="text-white/40 text-sm mt-1">{t.cardArrived}</p>
                 </motion.div>
 
-                {/* 스크래치 카드 */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <ScratchCard
-                        width={cardSize.width}
-                        height={cardSize.height}
-                        revealPercent={40}
-                        onReveal={handleReveal}
-                    >
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+                    <ScratchCard width={cardSize.width} height={cardSize.height} revealPercent={40} onReveal={handleReveal}>
                         <CardContent
-                            recipientName={recipientName}
+                            recipientName={cardData.client_name}
                             strengths={strengths}
-                            situation={situation}
-                            coachMessage={coachMessage}
+                            situation={cardData.situation_text || ''}
+                            coachMessage={cardData.coach_message || ''}
                             lang={lang}
                         />
                     </ScratchCard>
                 </motion.div>
 
-                {/* 카드 공개 후: 코치 프로필 + 답장 */}
                 {isRevealed && (
                     <div className="mt-8 w-full max-w-md space-y-6">
-                        {/* 답장 성공 메시지 */}
                         {replySent && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center"
-                            >
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
                                 <p className="text-green-400 font-medium">✅ 답장이 코치에게 전달되었습니다!</p>
                             </motion.div>
                         )}
-
-                        {/* 코치 프로필 */}
                         <CoachProfile onReply={() => setShowReplyForm(true)} />
-
-                        {/* 공유 버튼 */}
-                        <motion.div
-                            className="flex gap-3"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                        >
-                            <button
-                                onClick={shareToKakao}
-                                className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2"
-                            >
+                        <motion.div className="flex gap-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                            <button onClick={shareToKakao} className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2">
                                 💬 {t.kakaoShare}
                             </button>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(window.location.href);
-                                    alert(t.linkCopied);
-                                }}
-                                className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors"
-                            >
+                            <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert(t.linkCopied); }} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">
                                 🔗 {t.copyLink}
                             </button>
                         </motion.div>
                     </div>
                 )}
 
-                {/* 하단 안내 */}
                 {!isRevealed && (
-                    <motion.div
-                        className="mt-6 text-center"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <p className="text-white/50 text-sm">
-                            {t.scratchHint}
-                        </p>
+                    <motion.div className="mt-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                        <p className="text-white/50 text-sm">{t.scratchHint}</p>
                     </motion.div>
                 )}
             </div>
@@ -537,14 +435,10 @@ function CardViewContent() {
     );
 }
 
-export default function CardViewPage() {
+export default function Page({ params }: { params: { id: string } }) {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-ocean-900">
-                <div className="text-white">로딩 중...</div>
-            </div>
-        }>
-            <CardViewContent />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-ocean-900 text-white">로딩 중...</div>}>
+            <ShortCardContent params={params} />
         </Suspense>
     );
 }
