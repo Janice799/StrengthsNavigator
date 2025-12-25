@@ -347,3 +347,68 @@ export async function markReplyAsRead(replyId: string): Promise<boolean> {
     }
     return true;
 }
+
+// 코치 설정 관련
+export interface CoachSettings {
+    id: string;
+    password_hash: string;
+    email?: string;
+    updated_at: string;
+}
+
+// 코치 비밀번호 확인
+export async function verifyCoachPassword(password: string): Promise<boolean> {
+    if (!supabase) {
+        // Supabase 없으면 환경 변수로 fallback
+        return password === (process.env.COACH_PASSWORD || '1234');
+    }
+
+    const { data, error } = await supabase
+        .from('coach_settings')
+        .select('password_hash')
+        .limit(1)
+        .single();
+
+    if (error || !data) {
+        // 테이블 없으면 환경 변수로 fallback
+        return password === (process.env.COACH_PASSWORD || '1234');
+    }
+
+    return password === data.password_hash;
+}
+
+// 코치 비밀번호 변경
+export async function updateCoachPassword(newPassword: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase
+        .from('coach_settings')
+        .update({
+            password_hash: newPassword,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', (await supabase.from('coach_settings').select('id').limit(1).single()).data?.id || '');
+
+    if (error) {
+        console.error('비밀번호 변경 오류:', error);
+        return false;
+    }
+    return true;
+}
+
+// 코치 설정 조회
+export async function getCoachSettings(): Promise<CoachSettings | null> {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+        .from('coach_settings')
+        .select('*')
+        .limit(1)
+        .single();
+
+    if (error) {
+        console.error('코치 설정 조회 오류:', error);
+        return null;
+    }
+    return data;
+}

@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyCoachPassword } from '@/lib/supabase';
 
 // 세션 토큰 생성 (간단한 랜덤 문자열)
 function generateToken(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-// 기본 비밀번호 (환경변수가 없으면 이 값 사용)
-const DEFAULT_PASSWORD = 'coach1234';
-
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const password = body.password || '';
 
-        // 환경변수에서 비밀번호 확인 (없으면 기본값 사용)
-        const correctPassword = process.env.COACH_PASSWORD || DEFAULT_PASSWORD;
-
         console.log('🔐 로그인 시도');
 
-        if (password && password === correctPassword) {
+        // Supabase에서 비밀번호 확인 (fallback: 환경 변수)
+        const isValid = await verifyCoachPassword(password);
+
+        if (isValid) {
             // 세션 토큰 생성
             const token = generateToken();
 

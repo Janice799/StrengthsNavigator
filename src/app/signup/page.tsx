@@ -1,56 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from '@/lib/auth';
+import { signUp } from '@/lib/auth';
 import FloatingStars from '@/components/effects/FloatingStars';
 
-export default function LoginPage() {
+export default function SignUpPage() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    // 저장된 로그인 정보 불러오기
-    useEffect(() => {
-        const savedEmail = localStorage.getItem('savedEmail');
-        const savedRemember = localStorage.getItem('rememberMe');
-
-        if (savedEmail && savedRemember === 'true') {
-            setEmail(savedEmail);
-            setRememberMe(true);
-        }
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        // 유효성 검사
+        if (!formData.name || !formData.email || !formData.password) {
+            setError('모든 필드를 입력해주세요.');
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError('비밀번호는 최소 6자 이상이어야 합니다.');
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('비밀번호가 일치하지 않습니다.');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const result = await signIn(email, password);
+            const result = await signUp(formData.email, formData.password, formData.name);
 
             if (result.success) {
-                // 로그인 유지 옵션 처리
-                if (rememberMe) {
-                    localStorage.setItem('savedEmail', email);
-                    localStorage.setItem('rememberMe', 'true');
-                } else {
-                    localStorage.removeItem('savedEmail');
-                    localStorage.removeItem('rememberMe');
-                }
-
-                // 로그인 성공 - 대시보드로 이동
-                router.push('/dashboard');
-                router.refresh();
+                alert('✅ 회원가입 완료! 이메일을 확인해주세요.');
+                router.push('/login');
             } else {
-                setError(result.error || '로그인에 실패했습니다.');
+                setError(result.error || '회원가입에 실패했습니다.');
             }
         } catch (err) {
-            setError('로그인 중 오류가 발생했습니다.');
+            setError('회원가입 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
         }
@@ -67,7 +66,7 @@ export default function LoginPage() {
                         <h1 className="text-3xl font-elegant font-bold text-gold-gradient mb-2">
                             StrengthsNavigator
                         </h1>
-                        <p className="text-white/60">코치 로그인</p>
+                        <p className="text-white/60">코치 회원가입</p>
                     </div>
 
                     {/* 에러 메시지 */}
@@ -77,44 +76,57 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    {/* 로그인 폼 */}
+                    {/* 회원가입 폼 */}
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-white/80 text-sm mb-2">이름</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400 transition-colors"
+                                placeholder="홍길동"
+                                required
+                            />
+                        </div>
+
                         <div>
                             <label className="block text-white/80 text-sm mb-2">아이디 (이메일)</label>
                             <input
                                 type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400 transition-colors"
                                 placeholder="example@email.com"
                                 required
                             />
+                            <p className="text-white/40 text-xs mt-1">비밀번호 찾기에 사용됩니다</p>
                         </div>
 
                         <div>
-                            <label className="block text-white/80text-sm mb-2">비밀번호</label>
+                            <label className="block text-white/80 text-sm mb-2">비밀번호 (최소 6자)</label>
                             <input
                                 type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400 transition-colors"
                                 placeholder="••••••"
                                 required
+                                minLength={6}
                             />
                         </div>
 
-                        {/* 로그인 유지 체크박스 */}
-                        <div className="flex items-center gap-2">
+                        <div>
+                            <label className="block text-white/80 text-sm mb-2">비밀번호 확인</label>
                             <input
-                                type="checkbox"
-                                id="rememberMe"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                                className="w-4 h-4 rounded border-white/20 bg-white/10 text-gold-500 focus:ring-gold-500 cursor-pointer"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400 transition-colors"
+                                placeholder="••••••"
+                                required
+                                minLength={6}
                             />
-                            <label htmlFor="rememberMe" className="text-white/70 text-sm cursor-pointer">
-                                로그인 상태 유지
-                            </label>
                         </div>
 
                         <button
@@ -122,23 +134,16 @@ export default function LoginPage() {
                             disabled={loading}
                             className="w-full py-3 bg-gold-500 text-ocean-900 rounded-xl font-bold text-lg hover:bg-gold-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? '로그인 중...' : '로그인'}
+                            {loading ? '가입 중...' : '회원가입'}
                         </button>
                     </form>
 
-                    {/* 비밀번호 찾기 */}
-                    <div className="mt-4 text-center">
-                        <Link href="/forgot-password" className="text-white/60 hover:text-white text-sm transition-colors">
-                            비밀번호를 잊으셨나요?
-                        </Link>
-                    </div>
-
-                    {/* 회원가입 링크 */}
+                    {/* 로그인 링크 */}
                     <div className="mt-6 text-center">
                         <p className="text-white/60 text-sm">
-                            아직 계정이 없으신가요?{' '}
-                            <Link href="/signup" className="text-gold-400 hover:text-gold-300 transition-colors font-medium">
-                                회원가입
+                            이미 계정이 있으신가요?{' '}
+                            <Link href="/login" className="text-gold-400 hover:text-gold-300 transition-colors">
+                                로그인
                             </Link>
                         </p>
                     </div>

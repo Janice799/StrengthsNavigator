@@ -3,8 +3,9 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/auth';
 
-// 별 애니메이션 컴포넌트
+// 별 애니메이션
 function FloatingStars() {
     const [stars, setStars] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number; duration: number }>>([]);
 
@@ -49,122 +50,211 @@ function FloatingStars() {
 }
 
 export default function LandingPage() {
+    const [profile, setProfile] = useState({
+        name: 'Coach',
+        brand_name: 'StrengthsNavigator',
+        tagline: '강점 코칭 플랫폼',
+        title: 'Strengths Coach',
+        description: '강점 기반 코칭 서비스를 제공합니다.',
+        contact_email: '',
+        contact_phone: '',
+        website: '',
+        instagram: '',
+        facebook: '',
+        linkedin: '',
+        youtube: '',
+        profile_image_url: ''
+    });
+
+    useEffect(() => {
+        loadProfile();
+    }, []);
+
+    const loadProfile = async () => {
+        try {
+            const { data } = await supabase
+                .from('coach_profiles')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (data) {
+                setProfile({
+                    name: data.name || 'Coach',
+                    brand_name: data.brand_name || 'StrengthsNavigator',
+                    tagline: data.tagline || '강점 코칭 플랫폼',
+                    title: data.title || 'Strengths Coach',
+                    description: data.description || '강점 기반 코칭 서비스를 제공합니다.',
+                    contact_email: data.contact_email || '',
+                    contact_phone: data.contact_phone || '',
+                    website: data.website || '',
+                    instagram: data.instagram || '',
+                    facebook: data.facebook || '',
+                    linkedin: data.linkedin || '',
+                    youtube: data.youtube || '',
+                    profile_image_url: data.profile_image_url || ''
+                });
+            }
+        } catch (error) {
+            console.error('프로필 로드 오류:', error);
+        }
+    };
+
     return (
-        <main className="min-h-screen relative overflow-hidden">
-            {/* 별 배경 효과 */}
+        <main className="min-h-screen relative overflow-hidden flex items-center justify-center">
             <FloatingStars />
 
-            {/* 콘텐츠 - Flexbox로 3단 구성 */}
-            <div className="relative z-10 min-h-screen flex flex-col px-4 py-8">
-
-                {/* 1. 상단 로고 */}
+            <div className="relative z-10 w-full">
+                {/* 헤더 - 중앙에 로고, 우측 상단에 로그인/회원가입 */}
                 <motion.header
-                    className="text-center pt-4"
+                    className="fixed top-0 left-0 right-0 px-8 py-6 z-20"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
                 >
-                    <h1 className="text-2xl font-elegant font-semibold text-gold-gradient tracking-wide">
-                        StrengthsNavigator
-                    </h1>
-                    <p className="text-white/40 text-sm mt-1 tracking-widest">
-                        강점 네비게이터
-                    </p>
+                    <div className="flex justify-between items-start">
+                        {/* 중앙 로고 */}
+                        <div className="flex-1 flex justify-center">
+                            <div className="text-center">
+                                <h1 className="text-2xl font-elegant font-semibold text-gold-gradient">
+                                    StrengthsNavigator
+                                </h1>
+                                <p className="text-white/40 text-xs mt-1">강점 네비게이터</p>
+                            </div>
+                        </div>
+
+                        {/* 우측 버튼 */}
+                        <div className="flex items-center gap-3">
+                            <Link href="/login" className="px-5 py-2 text-white/70 hover:text-white text-sm transition-colors">
+                                로그인
+                            </Link>
+                            <Link href="/signup" className="px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-sm transition-colors border border-gold-500/30">
+                                회원가입
+                            </Link>
+                        </div>
+                    </div>
                 </motion.header>
 
-                {/* 2. 중앙 콘텐츠 (flex-1로 남은 공간 차지) */}
-                <motion.div
-                    className="flex-1 flex flex-col items-center justify-center text-center max-w-lg mx-auto py-8"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2, duration: 0.6 }}
-                >
-                    {/* 코치 프로필 사진 */}
-                    <motion.div
-                        className="relative mb-8"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                    >
-                        <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gold-500/30 shadow-2xl shadow-gold-500/20">
-                            <img
-                                src="/coach-photo.jpg"
-                                alt="조현영 강점코치"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        {/* 빛나는 테두리 효과 */}
-                        <div className="absolute inset-0 rounded-full border-2 border-gold-400/50 animate-pulse" />
-                    </motion.div>
+                {/* 메인 콘텐츠 - 왼쪽 이미지, 오른쪽 프로필 */}
+                <div className="max-w-6xl mx-auto px-8 min-h-screen flex items-center">
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-20">
 
-                    {/* 코치 이름 */}
-                    <motion.h2
-                        className="text-3xl font-elegant font-bold text-white mb-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                    >
-                        조현영 강점코치
-                    </motion.h2>
+                        {/* 왼쪽: 프로필 이미지 */}
+                        <motion.div
+                            className="flex justify-center lg:justify-end"
+                            initial={{ opacity: 0, x: -50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3, duration: 0.8 }}
+                        >
+                            {profile.profile_image_url ? (
+                                <div className="relative">
+                                    <div className="relative w-80 h-80 rounded-3xl overflow-hidden border-4 border-gold-500/30 shadow-2xl shadow-gold-500/20">
+                                        <img
+                                            src={profile.profile_image_url}
+                                            alt={`${profile.name} 코치`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="absolute inset-0 rounded-3xl border-2 border-gold-400/50 animate-pulse pointer-events-none" />
+                                </div>
+                            ) : (
+                                <div className="w-80 h-80 rounded-3xl bg-gradient-to-br from-gold-500/20 to-gold-600/20 border-2 border-gold-400/30 flex items-center justify-center">
+                                    <span className="text-8xl">✨</span>
+                                </div>
+                            )}
+                        </motion.div>
 
-                    {/* 코치 타이틀 */}
-                    <motion.p
-                        className="text-gold-400 font-medium mb-6"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        Gallup Certified Strengths Coach
-                    </motion.p>
+                        {/* 오른쪽: 프로필 정보 */}
+                        <motion.div
+                            className="space-y-6"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                        >
+                            {/* 상호/브랜드 */}
+                            <div>
+                                <h2 className="text-5xl font-elegant font-bold text-white mb-2">
+                                    {profile.brand_name}
+                                </h2>
 
-                    {/* 코치 소개 */}
-                    <motion.p
-                        className="text-white/70 leading-relaxed font-elegant text-lg mb-10 max-w-md"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        성공하는 나를 경험하는 새로운 방식<br />
-                        <span className="text-gold-400 font-bold">Selli Club</span>
-                    </motion.p>
+                                {/* 직함/자격증 */}
+                                <p className="text-gold-400 text-lg mb-3">
+                                    {profile.title}
+                                </p>
 
-                    {/* CTA 버튼 - 카드 보내기 */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7 }}
-                    >
-                        <Link href="/create">
-                            <motion.button
-                                className="px-12 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 rounded-full font-bold text-lg shadow-lg shadow-gold-500/30 hover:shadow-gold-500/50 transition-all duration-300"
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                <span className="flex items-center gap-3">
-                                    <span>✨</span>
-                                    카드 보내기
-                                    <span>✨</span>
-                                </span>
-                            </motion.button>
-                        </Link>
-                    </motion.div>
-                </motion.div>
+                                {/* 대표 문구 */}
+                                <p className="text-gold-400/80 text-xl italic mb-4">
+                                    {profile.tagline}
+                                </p>
+                            </div>
 
-                {/* 3. 하단 정보 (고정 영역, 겹치지 않음) */}
+                            {/* 소개글 */}
+                            <div className="glass rounded-2xl p-6 border border-gold-400/20">
+                                <p className="text-white/70 leading-relaxed whitespace-pre-line">
+                                    {profile.description}
+                                </p>
+                            </div>
+
+                            {/* 연락처 정보 */}
+                            {(profile.contact_email || profile.contact_phone) && (
+                                <div className="flex flex-wrap gap-4 text-sm text-white/60">
+                                    {profile.contact_email && (
+                                        <div className="flex items-center gap-2">
+                                            <span>📧</span>
+                                            <span>{profile.contact_email}</span>
+                                        </div>
+                                    )}
+                                    {profile.contact_phone && (
+                                        <div className="flex items-center gap-2">
+                                            <span>📞</span>
+                                            <span>{profile.contact_phone}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* SNS & 웹사이트 */}
+                            {(profile.website || profile.instagram || profile.facebook || profile.linkedin || profile.youtube) && (
+                                <div className="flex items-center gap-3 text-white/40">
+                                    {profile.website && (
+                                        <a href={profile.website} target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors text-xl">
+                                            🌐
+                                        </a>
+                                    )}
+                                    {profile.instagram && (
+                                        <a href={profile.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors text-xl">
+                                            📷
+                                        </a>
+                                    )}
+                                    {profile.facebook && (
+                                        <a href={profile.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors text-xl">
+                                            👤
+                                        </a>
+                                    )}
+                                    {profile.linkedin && (
+                                        <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors text-xl">
+                                            💼
+                                        </a>
+                                    )}
+                                    {profile.youtube && (
+                                        <a href={profile.youtube} target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors text-xl">
+                                            ▶️
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    </div>
+                </div>
+
+                {/* 하단 */}
                 <motion.footer
-                    className="text-center pb-4"
+                    className="fixed bottom-0 left-0 right-0 text-center pb-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
                 >
-                    <Link
-                        href="/login"
-                        className="inline-block text-white/50 hover:text-gold-400 text-sm transition-colors mb-4"
-                    >
-                        🔐 코치 로그인
-                    </Link>
-                    <div className="divider-elegant w-32 mx-auto mb-4" />
-                    <p className="text-white/30 text-xs tracking-wider">
+                    <div className="divider-elegant w-32 mx-auto mb-3" />
+                    <p className="text-white/30 text-xs">
                         강점 코칭과 진심이 만나는 곳
                     </p>
                 </motion.footer>

@@ -1,0 +1,306 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getCurrentUser, getCoachProfile, updateCoachProfile, uploadProfileImage } from '@/lib/auth';
+
+export default function ProfileSettings() {
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
+
+    const [profile, setProfile] = useState({
+        name: '',
+        nickname: '',
+        brand_name: '',
+        tagline: '',
+        title: '',
+        description: '',
+        contact_email: '',
+        contact_phone: '',
+        website: '',
+        instagram: '',
+        facebook: '',
+        linkedin: '',
+        youtube: '',
+        profile_image_url: ''
+    });
+
+    useEffect(() => {
+        loadProfile();
+    }, []);
+
+    const loadProfile = async () => {
+        try {
+            const user = await getCurrentUser();
+            if (!user) return;
+
+            setUserId(user.id);
+            const profileData = await getCoachProfile(user.id);
+
+            if (profileData) {
+                setProfile({
+                    name: profileData.name || '',
+                    nickname: profileData.nickname || '',
+                    brand_name: profileData.brand_name || 'StrengthsNavigator',
+                    tagline: profileData.tagline || '강점 코칭 플랫폼',
+                    title: profileData.title || 'Strengths Coach',
+                    description: profileData.description || '',
+                    contact_email: profileData.contact_email || '',
+                    contact_phone: profileData.contact_phone || '',
+                    website: profileData.website || '',
+                    instagram: profileData.instagram || '',
+                    facebook: profileData.facebook || '',
+                    linkedin: profileData.linkedin || '',
+                    youtube: profileData.youtube || '',
+                    profile_image_url: profileData.profile_image_url || ''
+                });
+            }
+        } catch (error) {
+            console.error('프로필 로드 오류:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userId) return;
+
+        setSaving(true);
+        try {
+            const result = await updateCoachProfile(userId, profile);
+            if (result.success) {
+                alert('✅ 프로필이 저장되었습니다!');
+            } else {
+                alert('❌ 저장 실패: ' + result.error);
+            }
+        } catch (error) {
+            alert('❌ 저장 중 오류가 발생했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !userId) return;
+
+        // 파일 크기 체크 (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('이미지 크기는 5MB 이하여야 합니다.');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const result = await uploadProfileImage(userId, file);
+            if (result.success && result.url) {
+                setProfile({ ...profile, profile_image_url: result.url });
+                alert('✅ 이미지가 업로드되었습니다!');
+            } else {
+                alert('❌ 업로드 실패: ' + result.error);
+            }
+        } catch (error) {
+            alert('❌ 업로드 중 오류가 발생했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return <div className="text-white/60">로딩 중...</div>;
+    }
+
+    return (
+        <div className="glass rounded-2xl p-6 max-w-4xl">
+            <h3 className="text-lg font-bold text-white mb-6">👤 프로필 편집</h3>
+
+            <form onSubmit={handleSave} className="space-y-6">
+                {/* 프로필 이미지 */}
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">프로필 이미지</label>
+                    <div className="flex items-center gap-4">
+                        {profile.profile_image_url && (
+                            <img
+                                src={profile.profile_image_url}
+                                alt="프로필"
+                                className="w-20 h-20 rounded-full object-cover border-2 border-gold-400/30"
+                            />
+                        )}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="text-white/60 text-sm"
+                        />
+                    </div>
+                    <p className="text-white/40 text-xs mt-1">권장: 정사각형, 최대 5MB</p>
+                </div>
+
+                {/* 기본 정보 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-white/80 text-sm mb-2">이름</label>
+                        <input
+                            type="text"
+                            value={profile.name}
+                            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                            className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-white/80 text-sm mb-2">닉네임 (카드 표시용)</label>
+                        <input
+                            type="text"
+                            value={profile.nickname}
+                            onChange={(e) => setProfile({ ...profile, nickname: e.target.value })}
+                            className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                            placeholder="미입력 시 이름 사용"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-white/80 text-sm mb-2">상호명/브랜드</label>
+                        <input
+                            type="text"
+                            value={profile.brand_name}
+                            onChange={(e) => setProfile({ ...profile, brand_name: e.target.value })}
+                            className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">직함/자격증</label>
+                    <input
+                        type="text"
+                        value={profile.title}
+                        onChange={(e) => setProfile({ ...profile, title: e.target.value })}
+                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                        placeholder="예: Gallup Certified Strengths Coach"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">대표 문구</label>
+                    <input
+                        type="text"
+                        value={profile.tagline}
+                        onChange={(e) => setProfile({ ...profile, tagline: e.target.value })}
+                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                        placeholder="예: 성공하는 나를 경험하는 새로운 방식"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">소개글</label>
+                    <textarea
+                        value={profile.description}
+                        onChange={(e) => setProfile({ ...profile, description: e.target.value })}
+                        rows={4}
+                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white resize-none"
+                        placeholder="강점 코칭에 대한 소개를 입력하세요..."
+                    />
+                </div>
+
+                {/* 연락처 정보 */}
+                <div className="border-t border-white/10 pt-6">
+                    <h4 className="text-white font-medium mb-4">📞 연락처 정보</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-white/80 text-sm mb-2">이메일</label>
+                            <input
+                                type="email"
+                                value={profile.contact_email}
+                                onChange={(e) => setProfile({ ...profile, contact_email: e.target.value })}
+                                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                placeholder="info@example.com"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-white/80 text-sm mb-2">전화번호</label>
+                            <input
+                                type="tel"
+                                value={profile.contact_phone}
+                                onChange={(e) => setProfile({ ...profile, contact_phone: e.target.value })}
+                                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                placeholder="010-1234-5678"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* SNS & 웹사이트 */}
+                <div className="border-t border-white/10 pt-6">
+                    <h4 className="text-white font-medium mb-4">🌐 SNS & 웹사이트</h4>
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-white/80 text-sm mb-2">홈페이지</label>
+                            <input
+                                type="url"
+                                value={profile.website}
+                                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                placeholder="https://example.com"
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-white/80 text-sm mb-2">Instagram</label>
+                                <input
+                                    type="url"
+                                    value={profile.instagram}
+                                    onChange={(e) => setProfile({ ...profile, instagram: e.target.value })}
+                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                    placeholder="https://instagram.com/..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-white/80 text-sm mb-2">Facebook</label>
+                                <input
+                                    type="url"
+                                    value={profile.facebook}
+                                    onChange={(e) => setProfile({ ...profile, facebook: e.target.value })}
+                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                    placeholder="https://facebook.com/..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-white/80 text-sm mb-2">LinkedIn</label>
+                                <input
+                                    type="url"
+                                    value={profile.linkedin}
+                                    onChange={(e) => setProfile({ ...profile, linkedin: e.target.value })}
+                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                    placeholder="https://linkedin.com/in/..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-white/80 text-sm mb-2">YouTube</label>
+                                <input
+                                    type="url"
+                                    value={profile.youtube}
+                                    onChange={(e) => setProfile({ ...profile, youtube: e.target.value })}
+                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white"
+                                    placeholder="https://youtube.com/@..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 저장 버튼 */}
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors disabled:opacity-50"
+                >
+                    {saving ? '저장 중...' : '💾 프로필 저장'}
+                </button>
+            </form>
+        </div>
+    );
+}

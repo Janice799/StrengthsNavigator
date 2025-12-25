@@ -13,12 +13,15 @@ import {
     createClient2,
     updateClient,
     deleteClient,
+    verifyCoachPassword,
+    updateCoachPassword,
     SentCard,
     ClientLastContact,
     CardReply,
     Client
 } from '@/lib/supabase';
 import strengthsI18n from '@/config/strengths_i18n.json';
+import ProfileSettings from '@/components/dashboard/ProfileSettings';
 
 // 강점 정보 (Gallup 공식 한국어)
 const STRENGTHS: Record<string, { name: string; emoji: string }> = {
@@ -157,7 +160,12 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [showClientForm, setShowClientForm] = useState(false);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'clients'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'settings'>('overview');
+
+    // 비밀번호 변경 상태
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     useEffect(() => {
         async function loadData() {
@@ -224,6 +232,45 @@ export default function DashboardPage() {
         }
     };
 
+    // 비밀번호 변경
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // 유효성 검사
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert('⚠️ 모든 필드를 입력해주세요.');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            alert('⚠️ 새 비밀번호가 일치하지 않습니다.');
+            return;
+        }
+
+        if (newPassword.length < 4) {
+            alert('⚠️ 비밀번호는 최소 4자 이상이어야 합니다.');
+            return;
+        }
+
+        // 현재 비밀번호 확인
+        const isValid = await verifyCoachPassword(currentPassword);
+        if (!isValid) {
+            alert('❌ 현재 비밀번호가 틀렸습니다.');
+            return;
+        }
+
+        // 비밀번호 변경
+        const success = await updateCoachPassword(newPassword);
+        if (success) {
+            alert('✅ 비밀번호가 성공적으로 변경되었습니다!');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } else {
+            alert('❌ 비밀번호 변경에 실패했습니다. 다시 시도해주세요.');
+        }
+    };
+
     // 로그아웃
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -277,6 +324,15 @@ export default function DashboardPage() {
                                 }`}
                         >
                             👥 전체 고객 (Clients)
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'settings'
+                                ? 'text-gold-400 border-b-2 border-gold-400'
+                                : 'text-white/60 hover:text-white'
+                                }`}
+                        >
+                            ⚙️ 설정
                         </button>
                     </div>
                 </div>
@@ -648,6 +704,69 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* 설정 탭 */}
+                        {activeTab === 'settings' && (
+                            <div className="space-y-6">
+                                <h2 className="text-xl font-bold text-white">⚙️ 설정</h2>
+
+                                {/* 프로필 편집 */}
+                                <ProfileSettings />
+
+                                {/* 비밀번호 변경 */}
+                                <div className="glass rounded-2xl p-6 max-w-2xl">
+                                    <h3 className="text-lg font-bold text-white mb-4">🔐 비밀번호 변경</h3>
+                                    <form onSubmit={handleChangePassword} className="space-y-4">
+                                        <div>
+                                            <label className="block text-white/80 text-sm mb-2">현재 비밀번호</label>
+                                            <input
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
+                                                placeholder="현재 비밀번호 입력"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-white/80 text-sm mb-2">새 비밀번호 (최소 4자)</label>
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
+                                                placeholder="새 비밀번호 입력"
+                                                required
+                                                minLength={4}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-white/80 text-sm mb-2">새 비밀번호 확인</label>
+                                            <input
+                                                type="password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
+                                                placeholder="새 비밀번호 다시 입력"
+                                                required
+                                                minLength={4}
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            className="w-full px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors"
+                                        >
+                                            🔒 비밀번호 변경
+                                        </button>
+                                    </form>
+                                    <div className="mt-4 p-4 bg-white/5 rounded-xl">
+                                        <p className="text-white/60 text-sm">
+                                            💡 <strong>팁:</strong> 보안을 위해 주기적으로 비밀번호를 변경하세요.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
