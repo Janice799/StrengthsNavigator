@@ -12,43 +12,7 @@ import { useSearchParams } from 'next/navigation';
 type Language = 'ko' | 'en';
 type I18nTexts = typeof i18n.ko;
 
-// 다국어 강점 정보 (card/page.tsx와 동일)
-const STRENGTHS: Record<string, { name: string; emoji: string }> = {
-    'achiever': { name: '성취', emoji: '🏆' },
-    'activator': { name: '활성화', emoji: '⚡' },
-    'adaptability': { name: '적응성', emoji: '🌊' },
-    'analytical': { name: '분석', emoji: '🔍' },
-    'arranger': { name: '배열', emoji: '🧩' },
-    'belief': { name: '신념', emoji: '💫' },
-    'command': { name: '지휘', emoji: '👑' },
-    'communication': { name: '커뮤니케이션', emoji: '💬' },
-    'competition': { name: '경쟁', emoji: '🏅' },
-    'connectedness': { name: '연결성', emoji: '🔗' },
-    'consistency': { name: '일관성', emoji: '⚖️' },
-    'context': { name: '맥락', emoji: '📚' },
-    'deliberative': { name: '심사숙고', emoji: '🤔' },
-    'developer': { name: '성장촉진', emoji: '🌱' },
-    'discipline': { name: '규율', emoji: '📋' },
-    'empathy': { name: '공감', emoji: '💝' },
-    'focus': { name: '집중', emoji: '🎯' },
-    'futuristic': { name: '미래지향', emoji: '🔮' },
-    'harmony': { name: '화합', emoji: '🤝' },
-    'ideation': { name: '아이디어', emoji: '💡' },
-    'includer': { name: '포용', emoji: '🤗' },
-    'individualization': { name: '개별화', emoji: '👤' },
-    'input': { name: '수집', emoji: '📥' },
-    'intellection': { name: '지적사고', emoji: '🧠' },
-    'learner': { name: '학습', emoji: '📖' },
-    'maximizer': { name: '극대화', emoji: '📈' },
-    'positivity': { name: '긍정', emoji: '😊' },
-    'relator': { name: '친밀', emoji: '❤️' },
-    'responsibility': { name: '책임', emoji: '✓' },
-    'restorative': { name: '복구', emoji: '🔧' },
-    'self-assurance': { name: '자기확신', emoji: '💪' },
-    'significance': { name: '중요성', emoji: '⭐' },
-    'strategic': { name: '전략', emoji: '♟️' },
-    'woo': { name: '사교', emoji: '🎉' },
-};
+// strengths_i18n.json 파일을 사용하므로 별도 객체 불필요
 
 // 별 애니메이션
 function FloatingStars() {
@@ -230,7 +194,7 @@ function CardContent({ recipientName, strengths, situation, coachMessage, lang =
     return (
         <div className="premium-card card-corner rounded-2xl p-3 sm:p-4 w-full h-full flex flex-col bg-gradient-to-br from-ocean-800 to-ocean-900">
             <div className="text-center mb-1">
-                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">LIFELITERACY Selli</p>
+                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">Selli Club</p>
                 <h2 className="text-gold-400 font-signature text-lg sm:text-xl">
                     {i18n[lang].to} {recipientName || (lang === 'ko' ? '받는 분' : 'Dear Friend')}
                 </h2>
@@ -390,7 +354,7 @@ function ShortCardContent({ params }: { params: { id: string } }) {
 
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
                 <motion.div className="mb-6 text-center" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-                    <h1 className="text-xl font-elegant font-semibold text-gold-gradient">LIFELITERACY Selli</h1>
+                    <h1 className="text-xl font-elegant font-semibold text-gold-gradient">Selli Club</h1>
                     <p className="text-white/40 text-sm mt-1">{t.cardArrived}</p>
                 </motion.div>
 
@@ -415,7 +379,7 @@ function ShortCardContent({ params }: { params: { id: string } }) {
                         )}
                         <CoachProfile onReply={() => setShowReplyForm(true)} />
                         <motion.div className="flex gap-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                            <button onClick={shareToKakao} className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2">
+                            <button onClick={shareToKakao} className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2">
                                 💬 {t.kakaoShare}
                             </button>
                             <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert(t.linkCopied); }} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">

@@ -5,12 +5,12 @@
         "emoji": "🏆"
     },
     "activator": {
-        "ko": "활성화",
+        "ko": "행동",
         "en": "Activator",
         "emoji": "⚡"
     },
     "adaptability": {
-        "ko": "적응성",
+        "ko": "적응",
         "en": "Adaptability",
         "emoji": "🌊"
     },
@@ -20,7 +20,7 @@
         "emoji": "🔍"
     },
     "arranger": {
-        "ko": "배열",
+        "ko": "정리",
         "en": "Arranger",
         "emoji": "🧩"
     },
@@ -30,7 +30,7 @@
         "emoji": "💫"
     },
     "command": {
-        "ko": "지휘",
+        "ko": "주도력",
         "en": "Command",
         "emoji": "👑"
     },
@@ -45,7 +45,7 @@
         "emoji": "🏅"
     },
     "connectedness": {
-        "ko": "연결성",
+        "ko": "연결",
         "en": "Connectedness",
         "emoji": "🔗"
     },
@@ -65,12 +65,12 @@
         "emoji": "🤔"
     },
     "developer": {
-        "ko": "성장촉진",
+        "ko": "개발",
         "en": "Developer",
         "emoji": "🌱"
     },
     "discipline": {
-        "ko": "규율",
+        "ko": "체계",
         "en": "Discipline",
         "emoji": "📋"
     },
@@ -95,7 +95,7 @@
         "emoji": "🤝"
     },
     "ideation": {
-        "ko": "아이디어",
+        "ko": "발상",
         "en": "Ideation",
         "emoji": "💡"
     },
@@ -120,7 +120,7 @@
         "emoji": "🧠"
     },
     "learner": {
-        "ko": "학습",
+        "ko": "배움",
         "en": "Learner",
         "emoji": "📖"
     },
@@ -135,7 +135,7 @@
         "emoji": "😊"
     },
     "relator": {
-        "ko": "친밀",
+        "ko": "절친",
         "en": "Relator",
         "emoji": "❤️"
     },
@@ -165,7 +165,7 @@
         "emoji": "♟️"
     },
     "woo": {
-        "ko": "사교",
+        "ko": "사교성",
         "en": "Woo",
         "emoji": "🎉"
     }

@@ -90,14 +90,20 @@ export async function getClientByName(name: string): Promise<Client | null> {
 export async function createClient2(client: Partial<Client>): Promise<Client | null> {
     if (!supabase) return null;
 
+    const clientData = {
+        ...client,
+        created_at: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
         .from('clients')
-        .insert([client])
+        .insert([clientData])
         .select()
         .single();
 
     if (error) {
         console.error('클라이언트 생성 오류:', error);
+        alert(`고객 저장 실패: ${error.message}`);
         return null;
     }
     return data;
@@ -119,6 +125,39 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
     }
     return data;
 }
+
+// 전체 고객 목록 조회
+export async function getAllClients(): Promise<Client[]> {
+    if (!supabase) return [];
+
+    const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('고객 목록 조회 오류:', error);
+        return [];
+    }
+    return data || [];
+}
+
+// 고객 삭제
+export async function deleteClient(id: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('클라이언트 삭제 오류:', error);
+        return false;
+    }
+    return true;
+}
+
 
 // 카드 발송 관련 함수
 export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | null> {
@@ -205,21 +244,6 @@ export async function getClientsNeedingFollowup(): Promise<ClientLastContact[]> 
     return data || [];
 }
 
-// 모든 클라이언트 조회
-export async function getAllClients(): Promise<Client[]> {
-    if (!supabase) return [];
-
-    const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name');
-
-    if (error) {
-        console.error('클라이언트 목록 조회 오류:', error);
-        return [];
-    }
-    return data || [];
-}
 
 // 대시보드 통계
 export async function getDashboardStats() {

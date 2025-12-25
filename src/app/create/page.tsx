@@ -6,44 +6,45 @@ import Link from 'next/link';
 import SeasonalEffect from '@/components/effects/SeasonalEffect';
 import seasonalTemplates from '@/config/seasonal_templates.json';
 import strengthDescriptions from '@/config/strength_descriptions.json';
+import strengthsI18n from '@/config/strengths_i18n.json';
 import { searchClients, saveSentCard, Client } from '@/lib/supabase';
 
-// 34가지 CliftonStrengths
+// 34가지 CliftonStrengths (Gallup 공식 한국어)
 const STRENGTHS = [
     { id: 'achiever', name: 'Achiever (성취)', domain: 'executing', emoji: '🏆' },
-    { id: 'activator', name: 'Activator (활성화)', domain: 'influencing', emoji: '⚡' },
-    { id: 'adaptability', name: 'Adaptability (적응성)', domain: 'relationship', emoji: '🌊' },
+    { id: 'activator', name: 'Activator (행동)', domain: 'influencing', emoji: '⚡' },
+    { id: 'adaptability', name: 'Adaptability (적응)', domain: 'relationship', emoji: '🌊' },
     { id: 'analytical', name: 'Analytical (분석)', domain: 'strategic', emoji: '🔍' },
-    { id: 'arranger', name: 'Arranger (배열)', domain: 'executing', emoji: '🧩' },
+    { id: 'arranger', name: 'Arranger (정리)', domain: 'executing', emoji: '🧩' },
     { id: 'belief', name: 'Belief (신념)', domain: 'executing', emoji: '💫' },
-    { id: 'command', name: 'Command (지휘)', domain: 'influencing', emoji: '👑' },
+    { id: 'command', name: 'Command (주도력)', domain: 'influencing', emoji: '👑' },
     { id: 'communication', name: 'Communication (커뮤니케이션)', domain: 'influencing', emoji: '💬' },
     { id: 'competition', name: 'Competition (경쟁)', domain: 'influencing', emoji: '🏅' },
-    { id: 'connectedness', name: 'Connectedness (연결성)', domain: 'relationship', emoji: '🔗' },
+    { id: 'connectedness', name: 'Connectedness (연결)', domain: 'relationship', emoji: '🔗' },
     { id: 'consistency', name: 'Consistency (일관성)', domain: 'executing', emoji: '⚖️' },
     { id: 'context', name: 'Context (맥락)', domain: 'strategic', emoji: '📚' },
     { id: 'deliberative', name: 'Deliberative (심사숙고)', domain: 'executing', emoji: '🤔' },
-    { id: 'developer', name: 'Developer (성장촉진)', domain: 'relationship', emoji: '🌱' },
-    { id: 'discipline', name: 'Discipline (규율)', domain: 'executing', emoji: '📋' },
+    { id: 'developer', name: 'Developer (개발)', domain: 'relationship', emoji: '🌱' },
+    { id: 'discipline', name: 'Discipline (체계)', domain: 'executing', emoji: '📋' },
     { id: 'empathy', name: 'Empathy (공감)', domain: 'relationship', emoji: '💝' },
     { id: 'focus', name: 'Focus (집중)', domain: 'executing', emoji: '🎯' },
     { id: 'futuristic', name: 'Futuristic (미래지향)', domain: 'strategic', emoji: '🔮' },
     { id: 'harmony', name: 'Harmony (화합)', domain: 'relationship', emoji: '🤝' },
-    { id: 'ideation', name: 'Ideation (아이디어)', domain: 'strategic', emoji: '💡' },
+    { id: 'ideation', name: 'Ideation (발상)', domain: 'strategic', emoji: '💡' },
     { id: 'includer', name: 'Includer (포용)', domain: 'relationship', emoji: '🤗' },
     { id: 'individualization', name: 'Individualization (개별화)', domain: 'relationship', emoji: '👤' },
     { id: 'input', name: 'Input (수집)', domain: 'strategic', emoji: '📥' },
     { id: 'intellection', name: 'Intellection (지적사고)', domain: 'strategic', emoji: '🧠' },
-    { id: 'learner', name: 'Learner (학습)', domain: 'strategic', emoji: '📖' },
+    { id: 'learner', name: 'Learner (배움)', domain: 'strategic', emoji: '📖' },
     { id: 'maximizer', name: 'Maximizer (극대화)', domain: 'influencing', emoji: '📈' },
     { id: 'positivity', name: 'Positivity (긍정)', domain: 'relationship', emoji: '😊' },
-    { id: 'relator', name: 'Relator (친밀)', domain: 'relationship', emoji: '❤️' },
+    { id: 'relator', name: 'Relator (절친)', domain: 'relationship', emoji: '❤️' },
     { id: 'responsibility', name: 'Responsibility (책임)', domain: 'executing', emoji: '✅' },
     { id: 'restorative', name: 'Restorative (복구)', domain: 'executing', emoji: '🔧' },
     { id: 'self-assurance', name: 'Self-Assurance (자기확신)', domain: 'influencing', emoji: '💪' },
     { id: 'significance', name: 'Significance (중요성)', domain: 'influencing', emoji: '⭐' },
     { id: 'strategic', name: 'Strategic (전략)', domain: 'strategic', emoji: '♟️' },
-    { id: 'woo', name: 'Woo (사교)', domain: 'influencing', emoji: '🎉' },
+    { id: 'woo', name: 'Woo (사교성)', domain: 'influencing', emoji: '🎉' },
 ];
 
 type Season = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -157,7 +158,7 @@ function CardPreview({
 
             {/* 상단: 로고 + 수신자 (골드 컬러 font-signature) */}
             <div className="text-center mb-2">
-                <p className="text-gold-400 text-xs font-semibold tracking-wide mb-1">LIFELITERACY Selli</p>
+                <p className="text-gold-400 text-xs font-semibold tracking-wide mb-1">Selli Club</p>
                 <h2 className="text-gold-400 font-signature text-lg">
                     To. {recipientName || '받는 분의 이름'}
                 </h2>
@@ -288,10 +289,10 @@ export default function CardCreatorPage() {
         // 각 강점에 대한 설명 추가
         selectedStrengths.forEach((strengthId, index) => {
             const desc = strengthDescriptions[strengthId as keyof typeof strengthDescriptions];
-            const strength = STRENGTHS.find(s => s.id === strengthId);
-            if (desc && strength) {
-                const strengthName = strength.name.split(' ')[0];
-                const emoji = strength.emoji;
+            const strengthI18n = strengthsI18n[strengthId as keyof typeof strengthsI18n];
+            if (desc && strengthI18n) {
+                const strengthName = strengthI18n[lang]; // 언어에 맞는 이름 사용
+                const emoji = strengthI18n.emoji;
                 const trait = desc[lang].trait;
                 const description = desc[lang].description;
 
@@ -626,7 +627,11 @@ export default function CardCreatorPage() {
                                                         : 'bg-white/10 text-white/70 hover:bg-white/20'
                                                     }`}
                                             >
-                                                {s.emoji} {s.name.split(' ')[0]}
+                                                {s.emoji} {
+                                                    language === 'ko'
+                                                        ? `${strengthsI18n[s.id as keyof typeof strengthsI18n]?.ko || s.name.split(' ')[0]} (${s.name.split(' ')[0]})`
+                                                        : s.name.split(' ')[0]
+                                                }
                                             </button>
                                         );
                                     })}
@@ -635,9 +640,12 @@ export default function CardCreatorPage() {
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {selectedStrengths.map(id => {
                                             const s = STRENGTHS.find(str => str.id === id);
+                                            const strengthName = language === 'ko'
+                                                ? `${strengthsI18n[id as keyof typeof strengthsI18n]?.ko} (${s?.name.split(' ')[0]})`
+                                                : s?.name.split(' ')[0];
                                             return s ? (
                                                 <span key={id} className="px-3 py-1 bg-gold-500/20 border border-gold-400/30 rounded-full text-gold-400 text-sm flex items-center gap-1">
-                                                    {s.emoji} {s.name}
+                                                    {s.emoji} {strengthName}
                                                     <button
                                                         onClick={() => setSelectedStrengths(prev => prev.filter(i => i !== id))}
                                                         className="ml-1 hover:text-red-400"
@@ -769,7 +777,7 @@ export default function CardCreatorPage() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={shareToKakao}
-                                            className="py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2"
+                                            className="py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2"
                                         >
                                             💬 카카오톡 공유
                                         </button>

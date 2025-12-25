@@ -279,7 +279,7 @@ function CardContent({
         <div className="premium-card card-corner rounded-2xl p-3 sm:p-4 w-full h-full flex flex-col bg-gradient-to-br from-ocean-800 to-ocean-900">
             {/* 상단: 로고 + 수신자 (컴팩트하게 한줄로) */}
             <div className="text-center mb-1">
-                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">LIFELITERACY Selli</p>
+                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">Selli Club</p>
                 <h2 className="text-gold-400 font-signature text-lg sm:text-xl">
                     {i18n[lang].to} {recipientName || (lang === 'ko' ? '받는 분' : 'Dear Friend')}
                 </h2>
@@ -449,7 +449,7 @@ function CardViewContent() {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
-                        LIFELITERACY Selli
+                        Selli Club
                     </h1>
                     <p className="text-white/40 text-sm mt-1">{t.cardArrived}</p>
                 </motion.div>
@@ -502,7 +502,7 @@ function CardViewContent() {
                         >
                             <button
                                 onClick={shareToKakao}
-                                className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FDD800] transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2"
                             >
                                 💬 {t.kakaoShare}
                             </button>
