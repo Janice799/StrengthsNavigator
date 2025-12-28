@@ -7,7 +7,9 @@ import SeasonalEffect from '@/components/effects/SeasonalEffect';
 import seasonalTemplates from '@/config/seasonal_templates.json';
 import strengthDescriptions from '@/config/strength_descriptions.json';
 import strengthsI18n from '@/config/strengths_i18n.json';
-import { searchClients, saveSentCard, Client } from '@/lib/supabase';
+import i18n from '@/config/i18n.json';
+import { searchClients, saveSentCard, Client, getPublicCoachProfile } from '@/lib/supabase';
+import { LanguageToggle } from '@/hooks/useLanguage';
 
 // 34가지 CliftonStrengths (Gallup 공식 한국어)
 const STRENGTHS = [
@@ -121,7 +123,9 @@ function CardPreview({
     situation,
     coachMessage,
     season,
-    language = 'ko'
+    language = 'ko',
+    brandName,
+    coachName
 }: {
     recipientName: string;
     strengths: string[];
@@ -129,6 +133,8 @@ function CardPreview({
     coachMessage: string;
     season: Season | null;
     language?: 'ko' | 'en';
+    brandName?: string;
+    coachName?: string;
 }) {
     // 언어에 따라 강점 이름 표시
     const selectedStrengthsList = strengths.map((id: string) => {
@@ -158,9 +164,9 @@ function CardPreview({
 
             {/* 상단: 로고 + 수신자 (골드 컬러 font-signature) */}
             <div className="text-center mb-2">
-                <p className="text-gold-400 text-xs font-semibold tracking-wide mb-1">Selli Club</p>
+                <p className="text-gold-400 text-xs font-semibold tracking-wide mb-1">{brandName || 'StrengthsNavigator'}</p>
                 <h2 className="text-gold-400 font-signature text-lg">
-                    To. {recipientName || '받는 분의 이름'}
+                    To. {recipientName || (language === 'en' ? "Recipient's Name" : '받는 분의 이름')}
                 </h2>
             </div>
 
@@ -187,7 +193,7 @@ function CardPreview({
             {/* 코치의 메시지 */}
             <div className="mb-2 overflow-y-auto max-h-40">
                 <p className="text-white leading-relaxed font-elegant text-sm whitespace-pre-wrap text-center px-1">
-                    {coachMessage || '코치의 진심 어린 메시지가 여기에 표시됩니다.'}
+                    {coachMessage || (language === 'en' ? "Coach's heartfelt message will appear here." : '코치의 진심 어린 메시지가 여기에 표시됩니다.')}
                 </p>
             </div>
 
@@ -196,7 +202,7 @@ function CardPreview({
 
             {/* 코치 서명 - 골드 컬러 font-signature */}
             <div className="text-center">
-                <p className="text-gold-400 font-signature text-lg">From. 조현영 강점코치</p>
+                <p className="text-gold-400 font-signature text-lg">From. {coachName || '코치'}</p>
             </div>
         </motion.div>
     );
@@ -210,6 +216,9 @@ export default function CardCreatorPage() {
     const [coachMessage, setCoachMessage] = useState('');
     const [language, setLanguage] = useState<'ko' | 'en'>('ko');
 
+    // i18n 텍스트
+    const t = (i18n as any)[language];
+
     // 계절 테마 상태
     const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
     const [selectedSituation, setSelectedSituation] = useState<Situation | null>(null);
@@ -222,6 +231,28 @@ export default function CardCreatorPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+
+    // 코치 프로필 상태
+    const [coachProfile, setCoachProfile] = useState({
+        brand_name: 'StrengthsNavigator',
+        nickname: '',
+        name: ''
+    });
+
+    // 프로필 로드
+    useEffect(() => {
+        async function loadProfile() {
+            const profile = await getPublicCoachProfile();
+            if (profile) {
+                setCoachProfile({
+                    brand_name: profile.brand_name || 'StrengthsNavigator',
+                    nickname: profile.nickname || '',
+                    name: profile.name || ''
+                });
+            }
+        }
+        loadProfile();
+    }, []);
 
     // 고객 검색 (debounced)
     const searchClientsDebounced = useCallback(async (query: string) => {
@@ -428,11 +459,15 @@ export default function CardCreatorPage() {
                 <div className="max-w-4xl mx-auto mb-8">
                     <div className="flex items-center justify-between">
                         <Link href="/" className="text-white/60 hover:text-gold-400 transition-colors flex items-center gap-2">
-                            ← 홈으로
+                            {language === 'en' ? '← Home' : '← 홈으로'}
                         </Link>
                         <div className="text-center">
-                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">카드 만들기</h1>
-                            <p className="text-white/60 text-sm mt-1">특별한 메시지를 담아보세요</p>
+                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">
+                                {language === 'en' ? 'Create Card' : '카드 만들기'}
+                            </h1>
+                            <p className="text-white/60 text-sm mt-1">
+                                {language === 'en' ? 'Add a special message' : '특별한 메시지를 담아보세요'}
+                            </p>
                         </div>
                         <div className="w-20" />
                     </div>
@@ -451,7 +486,7 @@ export default function CardCreatorPage() {
                             {/* 🌸 계절 테마 선택 */}
                             <div>
                                 <label className="block text-white/80 mb-3 font-medium">
-                                    🌈 계절 테마
+                                    {language === 'en' ? '🌈 Season Theme' : '🌈 계절 테마'}
                                 </label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {SEASONS.map((season) => (
@@ -466,7 +501,9 @@ export default function CardCreatorPage() {
                                             whileTap={{ scale: 0.95 }}
                                         >
                                             <span className="text-2xl block mb-1">{season.emoji}</span>
-                                            <span className="text-white/80 text-xs">{season.name}</span>
+                                            <span className="text-white/80 text-xs">
+                                                {(i18n as any)[language].seasons[season.id]}
+                                            </span>
                                         </motion.button>
                                     ))}
                                 </div>
@@ -475,7 +512,7 @@ export default function CardCreatorPage() {
                             {/* 📨 상황 선택 */}
                             <div>
                                 <label className="block text-white/80 mb-3 font-medium">
-                                    📝 상황 선택
+                                    {language === 'en' ? '📝 Select Situation' : '📝 상황 선택'}
                                 </label>
                                 <div className="grid grid-cols-5 gap-2">
                                     {SITUATIONS.map((situation) => (
@@ -490,7 +527,9 @@ export default function CardCreatorPage() {
                                             whileTap={{ scale: 0.98 }}
                                         >
                                             <span className="text-xl block mb-1">{situation.emoji}</span>
-                                            <span className="text-white/80 text-xs">{situation.name}</span>
+                                            <span className="text-white/80 text-xs">
+                                                {(i18n as any)[language].situations[situation.id]}
+                                            </span>
                                         </motion.button>
                                     ))}
                                 </div>
@@ -499,7 +538,7 @@ export default function CardCreatorPage() {
                             {/* 언어 선택 */}
                             <div>
                                 <label className="block text-white/80 mb-2 font-medium">
-                                    🌍 언어 (Language)
+                                    {t.create.languageSelect}
                                 </label>
                                 <div className="flex gap-3">
                                     <button
@@ -528,8 +567,8 @@ export default function CardCreatorPage() {
                             {/* 수신자 이름 */}
                             <div className="relative">
                                 <label className="block text-white/80 mb-2 font-medium">
-                                    📨 받으실 분의 이름
-                                    {isSearching && <span className="text-gold-400 text-xs ml-2">검색 중...</span>}
+                                    {t.create.recipientName}
+                                    {isSearching && <span className="text-gold-400 text-xs ml-2">{t.create.searching}</span>}
                                 </label>
                                 <input
                                     type="text"
@@ -540,7 +579,7 @@ export default function CardCreatorPage() {
                                     }}
                                     onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
                                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:border-gold-400/50 transition-all"
-                                    placeholder="이름을 입력하세요 (기존 고객 검색)"
+                                    placeholder={t.create.recipientPlaceholder}
                                 />
 
                                 {/* 검색 결과 드롭다운 */}
@@ -553,7 +592,7 @@ export default function CardCreatorPage() {
                                             className="absolute z-20 w-full mt-1 bg-ocean-800 border border-gold-400/30 rounded-xl overflow-hidden shadow-xl"
                                         >
                                             <p className="px-3 py-2 text-xs text-gold-400 bg-gold-500/10">
-                                                ✨ 기존 고객 - 클릭하면 강점이 자동으로 채워집니다
+                                                {t.create.existingClient}
                                             </p>
                                             {searchResults.map((client) => (
                                                 <button
@@ -602,7 +641,7 @@ export default function CardCreatorPage() {
                             {/* 강점 선택 (다중 선택 - 최대 5개) */}
                             <div>
                                 <label className="block text-white/80 mb-2 font-medium">
-                                    💪 강점 선택 <span className="text-white/50 text-sm">({selectedStrengths.length}/5)</span>
+                                    {t.create.strengthSelect} <span className="text-white/50 text-sm">({selectedStrengths.length}/5)</span>
                                 </label>
                                 <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 bg-white/5 border border-white/10 rounded-xl">
                                     {STRENGTHS.map((s) => {
@@ -662,14 +701,14 @@ export default function CardCreatorPage() {
                             {/* 상황 설명 (Textarea) */}
                             <div>
                                 <label className="block text-white/80 mb-2 font-medium">
-                                    📝 상황 설명
+                                    {t.create.situationDesc}
                                 </label>
                                 <textarea
                                     value={situationText}
                                     onChange={(e) => setSituationText(e.target.value)}
                                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:border-gold-400/50 transition-all resize-none"
                                     rows={3}
-                                    placeholder="어떤 상황에서 이 강점이 발휘되었나요?"
+                                    placeholder={t.create.situationDescPlaceholder}
                                 />
                             </div>
 
@@ -677,7 +716,7 @@ export default function CardCreatorPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="text-white/80 font-medium">
-                                        ✨ 코치의 한마디
+                                        {t.create.coachMessage}
                                     </label>
                                     <div className="flex gap-2">
                                         <motion.button
@@ -687,14 +726,14 @@ export default function CardCreatorPage() {
                                             whileHover={{ scale: 1.05 }}
                                             disabled={selectedStrengths.length === 0}
                                         >
-                                            ✍️ 강점 편지 자동 생성
+                                            {t.create.autoGenerate}
                                         </motion.button>
                                         <motion.button
                                             onClick={() => setShowTemplates(!showTemplates)}
                                             className="text-gold-400 text-sm hover:text-gold-300 transition-colors"
                                             whileHover={{ scale: 1.05 }}
                                         >
-                                            {showTemplates ? '닫기 ✕' : '📋 추천 인사말'}
+                                            {showTemplates ? t.create.closeGreetings : t.create.recommendedGreetings}
                                         </motion.button>
                                     </div>
                                 </div>
@@ -712,7 +751,7 @@ export default function CardCreatorPage() {
                                             {(!selectedSeason || !selectedSituation) ? (
                                                 <div className="p-4 bg-white/5 border border-white/10 rounded-lg text-center">
                                                     <p className="text-white/60 text-sm">
-                                                        👆 위에서 <span className="text-gold-400">계절 테마</span>와 <span className="text-gold-400">상황</span>을 먼저 선택해주세요!
+                                                        {t.create.selectSeasonFirst}
                                                     </p>
                                                 </div>
                                             ) : (
@@ -740,7 +779,7 @@ export default function CardCreatorPage() {
                                     onChange={(e) => setCoachMessage(e.target.value)}
                                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:border-gold-400/50 transition-all resize-none"
                                     rows={4}
-                                    placeholder="진심을 담은 메시지를 작성해주세요"
+                                    placeholder={language === 'en' ? 'Write your heartfelt message here' : '진심을 담은 메시지를 작성해주세요'}
                                 />
                             </div>
 
@@ -753,7 +792,7 @@ export default function CardCreatorPage() {
                                     whileTap={{ scale: 0.98 }}
                                     disabled={!recipientName || selectedStrengths.length === 0 || !coachMessage || isSaving}
                                 >
-                                    {isSaving ? '저장 중...' : '카드 생성하기 ✨'}
+                                    {isSaving ? t.create.saving : t.create.createCard}
                                 </motion.button>
                             ) : (
                                 <motion.div
@@ -763,13 +802,13 @@ export default function CardCreatorPage() {
                                 >
                                     {/* 성공 메시지 */}
                                     <div className="text-center p-4 bg-green-500/20 border border-green-400/30 rounded-xl">
-                                        <p className="text-green-400 font-bold">🎉 카드가 생성되었습니다!</p>
-                                        <p className="text-white/60 text-sm mt-1">아래 버튼으로 공유하세요</p>
+                                        <p className="text-green-400 font-bold">{t.create.cardCreated}</p>
+                                        <p className="text-white/60 text-sm mt-1">{t.create.shareBelow}</p>
                                     </div>
 
                                     {/* URL 표시 */}
                                     <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                                        <p className="text-white/50 text-xs mb-1">공유 링크:</p>
+                                        <p className="text-white/50 text-xs mb-1">{t.create.shareLink}</p>
                                         <p className="text-white text-sm break-all">{cardUrl}</p>
                                     </div>
 
@@ -779,13 +818,13 @@ export default function CardCreatorPage() {
                                             onClick={shareToKakao}
                                             className="py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2"
                                         >
-                                            💬 카카오톡 공유
+                                            {t.create.kakaoShare}
                                         </button>
                                         <button
                                             onClick={copyUrl}
                                             className="py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                                         >
-                                            🔗 링크 복사
+                                            {t.create.copyLink}
                                         </button>
                                     </div>
 
@@ -795,7 +834,7 @@ export default function CardCreatorPage() {
                                         target="_blank"
                                         className="block text-center text-gold-400 hover:text-gold-300 text-sm transition-colors"
                                     >
-                                        👀 카드 미리보기 →
+                                        {language === 'en' ? '👀 Preview Card →' : '👀 카드 미리보기 →'}
                                     </Link>
 
                                     {/* 새 카드 만들기 */}
@@ -813,7 +852,7 @@ export default function CardCreatorPage() {
                                         }}
                                         className="w-full py-3 text-white/50 hover:text-white transition-colors text-sm"
                                     >
-                                        + 새 카드 만들기
+                                        {t.create.createAnother}
                                     </button>
                                 </motion.div>
                             )}
@@ -823,7 +862,7 @@ export default function CardCreatorPage() {
                                 href="/dashboard"
                                 className="block text-center text-white/50 hover:text-gold-400 text-sm transition-colors mt-4"
                             >
-                                📊 대시보드에서 발송 기록 보기 →
+                                {language === 'en' ? '📊 View History in Dashboard →' : '📊 대시보드에서 발송 기록 보기 →'}
                             </Link>
                         </div>
                     </motion.div>
@@ -836,7 +875,9 @@ export default function CardCreatorPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
                         <div className="sticky top-8">
-                            <p className="text-center text-white/50 text-sm mb-4">✨ 실시간 미리보기</p>
+                            <p className="text-center text-white/50 text-sm mb-4">
+                                {language === 'en' ? '✨ Live Preview' : '✨ 실시간 미리보기'}
+                            </p>
                             <CardPreview
                                 recipientName={recipientName}
                                 strengths={selectedStrengths}
@@ -844,6 +885,8 @@ export default function CardCreatorPage() {
                                 coachMessage={coachMessage}
                                 season={selectedSeason}
                                 language={language}
+                                brandName={coachProfile.brand_name}
+                                coachName={coachProfile.nickname || coachProfile.name}
                             />
                         </div>
                     </motion.div>

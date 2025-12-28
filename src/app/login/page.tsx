@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from '@/lib/auth';
 import FloatingStars from '@/components/effects/FloatingStars';
+import useLanguage, { LanguageToggle } from '@/hooks/useLanguage';
 
 export default function LoginPage() {
     const router = useRouter();
+    const { t, mounted } = useLanguage();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
@@ -47,14 +49,18 @@ export default function LoginPage() {
                 router.push('/dashboard');
                 router.refresh();
             } else {
-                setError(result.error || '로그인에 실패했습니다.');
+                setError(result.error || t.login.loginFailed);
             }
         } catch (err) {
-            setError('로그인 중 오류가 발생했습니다.');
+            setError(t.login.loginError);
         } finally {
             setLoading(false);
         }
     };
+
+    if (!mounted) {
+        return <div className="min-h-screen bg-ocean-900" />;
+    }
 
     return (
         <main className="min-h-screen relative overflow-hidden flex items-center justify-center">
@@ -62,12 +68,17 @@ export default function LoginPage() {
 
             <div className="relative z-10 w-full max-w-md px-4">
                 <div className="glass rounded-3xl p-8">
+                    {/* 언어 전환 버튼 */}
+                    <div className="absolute top-4 right-4">
+                        <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
+                    </div>
+
                     {/* 로고 */}
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-elegant font-bold text-gold-gradient mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-elegant font-bold text-gold-gradient mb-2 pb-1" style={{ lineHeight: '1.4' }}>
                             StrengthsNavigator
                         </h1>
-                        <p className="text-white/60">코치 로그인</p>
+                        <p className="text-white/60">{t.login.title}</p>
                     </div>
 
                     {/* 에러 메시지 */}
@@ -80,7 +91,7 @@ export default function LoginPage() {
                     {/* 로그인 폼 */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-white/80 text-sm mb-2">아이디 (이메일)</label>
+                            <label className="block text-white/80 text-sm mb-2">{t.login.emailLabel}</label>
                             <input
                                 type="email"
                                 value={email}
@@ -92,7 +103,7 @@ export default function LoginPage() {
                         </div>
 
                         <div>
-                            <label className="block text-white/80text-sm mb-2">비밀번호</label>
+                            <label className="block text-white/80 text-sm mb-2">{t.login.passwordLabel}</label>
                             <input
                                 type="password"
                                 value={password}
@@ -113,7 +124,7 @@ export default function LoginPage() {
                                 className="w-4 h-4 rounded border-white/20 bg-white/10 text-gold-500 focus:ring-gold-500 cursor-pointer"
                             />
                             <label htmlFor="rememberMe" className="text-white/70 text-sm cursor-pointer">
-                                로그인 상태 유지
+                                {t.login.rememberMe}
                             </label>
                         </div>
 
@@ -122,23 +133,23 @@ export default function LoginPage() {
                             disabled={loading}
                             className="w-full py-3 bg-gold-500 text-ocean-900 rounded-xl font-bold text-lg hover:bg-gold-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? '로그인 중...' : '로그인'}
+                            {loading ? t.login.loggingIn : t.login.loginButton}
                         </button>
                     </form>
 
                     {/* 비밀번호 찾기 */}
                     <div className="mt-4 text-center">
                         <Link href="/forgot-password" className="text-white/60 hover:text-white text-sm transition-colors">
-                            비밀번호를 잊으셨나요?
+                            {t.login.forgotPassword}
                         </Link>
                     </div>
 
                     {/* 회원가입 링크 */}
                     <div className="mt-6 text-center">
                         <p className="text-white/60 text-sm">
-                            아직 계정이 없으신가요?{' '}
+                            {t.login.noAccount}{' '}
                             <Link href="/signup" className="text-gold-400 hover:text-gold-300 transition-colors font-medium">
-                                회원가입
+                                {t.login.signUp}
                             </Link>
                         </p>
                     </div>
@@ -146,7 +157,7 @@ export default function LoginPage() {
                     {/* 홈으로 */}
                     <div className="mt-4 text-center">
                         <Link href="/" className="text-white/40 hover:text-white/60 text-sm transition-colors">
-                            ← 홈으로 돌아가기
+                            {t.common.backToHome}
                         </Link>
                     </div>
                 </div>

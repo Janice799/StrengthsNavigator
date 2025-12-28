@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/auth';
+import useLanguage, { LanguageToggle } from '@/hooks/useLanguage';
+import { useRouter } from 'next/navigation';
 
 // 별 애니메이션
 function FloatingStars() {
@@ -50,8 +52,12 @@ function FloatingStars() {
 }
 
 export default function LandingPage() {
+    const { t, lang, mounted } = useLanguage();
+    const router = useRouter();
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = 로딩중
     const [profile, setProfile] = useState({
         name: 'Coach',
+        nickname: '',
         brand_name: 'StrengthsNavigator',
         tagline: '강점 코칭 플랫폼',
         title: 'Strengths Coach',
@@ -63,72 +69,239 @@ export default function LandingPage() {
         facebook: '',
         linkedin: '',
         youtube: '',
-        profile_image_url: ''
+        profile_image_url: '',
+        // English fields
+        name_en: '',
+        title_en: '',
+        tagline_en: 'Strengths Coaching Platform',
+        description_en: 'We provide strengths-based coaching services.'
     });
 
     useEffect(() => {
-        loadProfile();
-    }, []);
+        // 클라이언트 마운트 확인 후 인증 체크
+        if (mounted) {
+            checkAuthAndLoadProfile();
+        }
+    }, [mounted]);
 
-    const loadProfile = async () => {
+    const checkAuthAndLoadProfile = async () => {
         try {
-            const { data } = await supabase
-                .from('coach_profiles')
-                .select('*')
-                .limit(1)
-                .single();
+            // 5초 타임아웃 설정
+            const timeoutPromise = new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error('Auth timeout')), 5000)
+            );
 
-            if (data) {
-                setProfile({
-                    name: data.name || 'Coach',
-                    brand_name: data.brand_name || 'StrengthsNavigator',
-                    tagline: data.tagline || '강점 코칭 플랫폼',
-                    title: data.title || 'Strengths Coach',
-                    description: data.description || '강점 기반 코칭 서비스를 제공합니다.',
-                    contact_email: data.contact_email || '',
-                    contact_phone: data.contact_phone || '',
-                    website: data.website || '',
-                    instagram: data.instagram || '',
-                    facebook: data.facebook || '',
-                    linkedin: data.linkedin || '',
-                    youtube: data.youtube || '',
-                    profile_image_url: data.profile_image_url || ''
-                });
+            const authPromise = supabase.auth.getSession();
+
+            // 타임아웃과 인증 확인 중 먼저 완료되는 것 사용
+            const result = await Promise.race([authPromise, timeoutPromise]);
+
+            if (!result) {
+                // 타임아웃된 경우
+                setIsLoggedIn(false);
+                return;
+            }
+
+            const { data: { session } } = result;
+
+            if (session?.user) {
+                setIsLoggedIn(true);
+                // 로그인된 경우 본인 프로필 로드
+                const { data, error } = await supabase
+                    .from('coach_profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+
+                console.log('Profile load result:', { data, error, userId: session.user.id });
+
+                if (error) {
+                    console.error('프로필 로드 오류:', error);
+                }
+
+                if (data) {
+                    setProfile({
+                        name: data.name || 'Coach',
+                        nickname: data.nickname || '',
+                        brand_name: data.brand_name || 'StrengthsNavigator',
+                        tagline: data.tagline || '강점 코칭 플랫폼',
+                        title: data.title || 'Strengths Coach',
+                        description: data.description || '강점 기반 코칭 서비스를 제공합니다.',
+                        contact_email: data.contact_email || '',
+                        contact_phone: data.contact_phone || '',
+                        website: data.website || '',
+                        instagram: data.instagram || '',
+                        facebook: data.facebook || '',
+                        linkedin: data.linkedin || '',
+                        youtube: data.youtube || '',
+                        profile_image_url: data.profile_image_url || '',
+                        // English fields
+                        name_en: data.name_en || '',
+                        title_en: data.title_en || '',
+                        tagline_en: data.tagline_en || 'Strengths Coaching Platform',
+                        description_en: data.description_en || 'We provide strengths-based coaching services.'
+                    });
+                    console.log('Profile set successfully');
+                } else {
+                    console.log('No profile found for user');
+                }
+            } else {
+                setIsLoggedIn(false);
             }
         } catch (error) {
-            console.error('프로필 로드 오류:', error);
+            console.error('인증/프로필 로드 오류:', error);
+            setIsLoggedIn(false);
         }
     };
 
+    // 마운트 안됐거나 인증 확인 중일 때 로딩 표시
+    if (!mounted || isLoggedIn === null) {
+        return (
+            <main className="min-h-screen relative overflow-hidden flex items-center justify-center">
+                <FloatingStars />
+                <div className="relative z-10 text-center">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-12 h-12 border-4 border-gold-400 border-t-transparent rounded-full mx-auto"
+                    />
+                </div>
+            </main>
+        );
+    }
+
+    // 비로그인 상태: 일반 랜딩페이지
+    if (!isLoggedIn) {
+        return (
+            <main className="min-h-screen relative overflow-hidden flex items-center justify-center">
+                <FloatingStars />
+
+                <div className="relative z-10 w-full">
+                    {/* 헤더 */}
+                    <motion.header
+                        className="fixed top-0 left-0 right-0 px-8 py-6 z-20"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <div className="flex justify-between items-start">
+                            <div className="text-left">
+                                <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
+                                    StrengthsNavigator
+                                </h1>
+                                <p className="text-white/40 text-xs mt-1">
+                                    {lang === 'en' ? 'Strengths Navigator' : '강점 네비게이터'}
+                                </p>
+                                <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <Link href="/login" className="px-5 py-2 text-white/70 hover:text-white text-sm transition-colors">
+                                    {t.login.loginButton}
+                                </Link>
+                                <Link href="/signup" className="px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-sm transition-colors border border-gold-500/30">
+                                    {t.signup.signUpButton}
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.header>
+
+                    {/* 메인 콘텐츠 - 비로그인: 일반 소개 */}
+                    <div className="max-w-4xl mx-auto px-8 min-h-screen flex items-center">
+                        <div className="w-full text-center py-20">
+                            <motion.div
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.8 }}
+                            >
+                                {/* 메인 아이콘 */}
+                                <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-gold-500/30 to-gold-600/20 border-2 border-gold-400/40 flex items-center justify-center">
+                                    <span className="text-6xl">✨</span>
+                                </div>
+
+                                {/* 메인 타이틀 */}
+                                <h2 className="text-4xl md:text-5xl font-elegant font-bold text-white mb-4">
+                                    {lang === 'en' ? 'Discover Your Strengths' : '당신의 강점을 발견하세요'}
+                                </h2>
+
+                                {/* 서브 타이틀 */}
+                                <p className="text-xl text-gold-400/80 italic mb-6">
+                                    {lang === 'en'
+                                        ? 'Send heartfelt encouragement with strengths coaching'
+                                        : '강점 코칭으로 진심 어린 응원을 전하세요'}
+                                </p>
+
+                                {/* 설명 */}
+                                <div className="glass rounded-2xl p-8 border border-gold-400/20 max-w-2xl mx-auto mb-8">
+                                    <p className="text-white/70 leading-relaxed text-lg">
+                                        {lang === 'en'
+                                            ? 'StrengthsNavigator helps coaches create personalized strength-based encouragement cards for their clients. Transform lives through the power of strengths recognition.'
+                                            : 'StrengthsNavigator는 코치들이 고객을 위해 개인화된 강점 기반 응원 카드를 만들 수 있도록 돕습니다. 강점 인식의 힘으로 삶을 변화시키세요.'}
+                                    </p>
+                                </div>
+
+                                {/* CTA 버튼들 */}
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <Link
+                                        href="/signup"
+                                        className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 rounded-2xl font-bold text-lg hover:from-gold-400 hover:to-gold-500 transition-all shadow-lg shadow-gold-500/25 hover:shadow-gold-500/40"
+                                    >
+                                        {lang === 'en' ? '🚀 Get Started' : '🚀 시작하기'}
+                                    </Link>
+                                    <Link
+                                        href="/login"
+                                        className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold text-lg transition-all border border-white/20"
+                                    >
+                                        {lang === 'en' ? 'Already a coach? Login' : '이미 코치이신가요? 로그인'}
+                                    </Link>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
+
+                    {/* 하단 */}
+                    <motion.footer
+                        className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1 }}
+                    >
+                        <div className="divider-elegant w-32 mx-auto mb-3" />
+                        <p className="text-white/40 text-xs">
+                            {lang === 'en' ? 'Where strengths coaching meets heartfelt connection' : '강점 코칭과 진심이 만나는 곳'}
+                        </p>
+                    </motion.footer>
+                </div>
+            </main>
+        );
+    }
+
+    // 로그인 상태: 코치 프로필 랜딩페이지
     return (
         <main className="min-h-screen relative overflow-hidden flex items-center justify-center">
             <FloatingStars />
 
             <div className="relative z-10 w-full">
-                {/* 헤더 - 중앙에 로고, 우측 상단에 로그인/회원가입 */}
+                {/* 헤더 - 로그인 상태 */}
                 <motion.header
                     className="fixed top-0 left-0 right-0 px-8 py-6 z-20"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <div className="flex justify-between items-start">
-                        {/* 중앙 로고 */}
-                        <div className="flex-1 flex justify-center">
-                            <div className="text-center">
-                                <h1 className="text-2xl font-elegant font-semibold text-gold-gradient">
-                                    StrengthsNavigator
-                                </h1>
-                                <p className="text-white/40 text-xs mt-1">강점 네비게이터</p>
-                            </div>
+                        <div className="text-left">
+                            <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
+                                StrengthsNavigator
+                            </h1>
+                            <p className="text-white/40 text-xs mt-1">
+                                {lang === 'en' ? 'Strengths Navigator' : '강점 네비게이터'}
+                            </p>
+                            <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
                         </div>
 
-                        {/* 우측 버튼 */}
+                        {/* 로그인 상태: 대시보드 버튼 */}
                         <div className="flex items-center gap-3">
-                            <Link href="/login" className="px-5 py-2 text-white/70 hover:text-white text-sm transition-colors">
-                                로그인
-                            </Link>
-                            <Link href="/signup" className="px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-sm transition-colors border border-gold-500/30">
-                                회원가입
+                            <Link href="/dashboard" className="px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-sm transition-colors border border-gold-500/30">
+                                {lang === 'en' ? 'Dashboard' : '대시보드'}
                             </Link>
                         </div>
                     </div>
@@ -136,11 +309,11 @@ export default function LandingPage() {
 
                 {/* 메인 콘텐츠 - 왼쪽 이미지, 오른쪽 프로필 */}
                 <div className="max-w-6xl mx-auto px-8 min-h-screen flex items-center">
-                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-20">
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-start py-20">
 
                         {/* 왼쪽: 프로필 이미지 */}
                         <motion.div
-                            className="flex justify-center lg:justify-end"
+                            className="flex justify-center lg:justify-end items-start"
                             initial={{ opacity: 0, x: -50 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3, duration: 0.8 }}
@@ -158,7 +331,9 @@ export default function LandingPage() {
                                 </div>
                             ) : (
                                 <div className="w-80 h-80 rounded-3xl bg-gradient-to-br from-gold-500/20 to-gold-600/20 border-2 border-gold-400/30 flex items-center justify-center">
-                                    <span className="text-8xl">✨</span>
+                                    <svg className="w-32 h-32 text-gold-400/60" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                    </svg>
                                 </div>
                             )}
                         </motion.div>
@@ -172,25 +347,33 @@ export default function LandingPage() {
                         >
                             {/* 상호/브랜드 */}
                             <div>
-                                <h2 className="text-5xl font-elegant font-bold text-white mb-2">
+                                <h2 className="text-3xl font-elegant font-bold text-white mb-2">
                                     {profile.brand_name}
                                 </h2>
 
-                                {/* 직함/자격증 */}
-                                <p className="text-gold-400 text-lg mb-3">
-                                    {profile.title}
+                                {/* 코치명 */}
+                                <p className="text-white/80 text-2xl font-semibold mb-2">
+                                    {lang === 'en'
+                                        ? `Coach ${profile.nickname || profile.name}`
+                                        : `${profile.nickname || profile.name} 코치`
+                                    }
+                                </p>
+
+                                {/* 직함/자격증 (여러줄) */}
+                                <p className="text-gold-400 text-sm mb-3 whitespace-pre-line">
+                                    {lang === 'en' && profile.title_en ? profile.title_en : profile.title}
                                 </p>
 
                                 {/* 대표 문구 */}
-                                <p className="text-gold-400/80 text-xl italic mb-4">
-                                    {profile.tagline}
+                                <p className="text-gold-400/80 text-xl italic mb-4 whitespace-pre-line">
+                                    {lang === 'en' && profile.tagline_en ? profile.tagline_en : profile.tagline}
                                 </p>
                             </div>
 
                             {/* 소개글 */}
                             <div className="glass rounded-2xl p-6 border border-gold-400/20">
                                 <p className="text-white/70 leading-relaxed whitespace-pre-line">
-                                    {profile.description}
+                                    {lang === 'en' && profile.description_en ? profile.description_en : profile.description}
                                 </p>
                             </div>
 
@@ -242,20 +425,30 @@ export default function LandingPage() {
                                     )}
                                 </div>
                             )}
+
+                            {/* CTA 버튼 - 응원 레터 보내기 */}
+                            <div className="pt-4">
+                                <Link
+                                    href="/create"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 rounded-2xl font-bold text-lg hover:from-gold-400 hover:to-gold-500 transition-all shadow-lg shadow-gold-500/25 hover:shadow-gold-500/40"
+                                >
+                                    {t.landing.sendCard}
+                                </Link>
+                            </div>
                         </motion.div>
                     </div>
                 </div>
 
                 {/* 하단 */}
                 <motion.footer
-                    className="fixed bottom-0 left-0 right-0 text-center pb-6"
+                    className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
                 >
                     <div className="divider-elegant w-32 mx-auto mb-3" />
-                    <p className="text-white/30 text-xs">
-                        강점 코칭과 진심이 만나는 곳
+                    <p className="text-white/40 text-xs">
+                        {lang === 'en' ? 'Where strengths coaching meets heartfelt connection' : '강점 코칭과 진심이 만나는 곳'}
                     </p>
                 </motion.footer>
             </div>

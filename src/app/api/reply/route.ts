@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 import nodemailer from 'nodemailer';
 import coachProfile from '@/config/coach_profile.json';
 
@@ -8,24 +8,37 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { cardId, recipientName, message } = body;
 
-        // 1. Supabase에 답장 저장
+        // 서버사이드 Supabase 클라이언트 생성
+        const supabase = createClient();
+
+        // 카드에서 coach_id 가져오기
+        let coachId = null;
+        if (cardId) {
+            const { data: cardData } = await supabase
+                .from('sent_cards')
+                .select('coach_id')
+                .eq('id', cardId)
+                .single();
+            coachId = cardData?.coach_id || null;
+        }
+
+        // Supabase에 답장 저장
         const replyData = {
-            card_id: cardId,
+            card_id: cardId || null,
+            coach_id: coachId,
             recipient_name: recipientName,
             message: message,
             is_read: false,
             created_at: new Date().toISOString()
         };
 
-        if (supabase) {
-            const { error } = await supabase
-                .from('card_replies')
-                .insert([replyData]);
+        const { error } = await supabase
+            .from('card_replies')
+            .insert([replyData]);
 
-            if (error) {
-                console.error('Supabase 저장 오류:', error);
-                throw error;
-            }
+        if (error) {
+            console.error('Supabase 저장 오류:', error);
+            throw error;
         }
 
         // 2. 이메일 발송 (환경변수가 설정된 경우에만, 실패해도 답장은 저장됨)

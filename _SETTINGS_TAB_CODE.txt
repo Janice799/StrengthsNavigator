@@ -1,0 +1,58 @@
+// 설정 탭 추가 코드
+// 707번째 줄 ))} 다음에 추가
+
+{/* 설정 탭 */}
+{activeTab === 'settings' && (
+    <div className="space-y-4">
+        <h2 className="text-xl font-bold text-white">⚙️ 설정</h2>
+        
+        <div className="glass rounded-2xl p-6 max-w-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">🔐 비밀번호 변경</h3>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">현재 비밀번호</label>
+                    <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">새 비밀번호 (최소 4자)</label>
+                    <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                        required
+                        minLength={4}
+                    />
+                </div>
+                <div>
+                    <label className="block text-white/80 text-sm mb-2">새 비밀번호 확인</label>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+                        required
+                        minLength={4}
+                    />
+                </div>
+                <button
+                    type="submit"
+                    className="w-full px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400"
+                >
+                    🔒 비밀번호 변경
+                </button>
+            </form>
+            <div className="mt-4 p-4 bg-white/5 rounded-xl">
+                <p className="text-white/60 text-sm">
+                    💡 <strong>팁:</strong> 보안을 위해 주기적으로 비밀번호를 변경하세요.
+                </p>
+            </div>
+        </div>
+    </div>
+)}

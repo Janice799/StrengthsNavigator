@@ -1,12 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
-import { createClientComponentClient, createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient as createBrowserClient } from './supabase-browser';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// 클라이언트 사이드 Supabase (Auth 포함)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 클라이언트 사이드 Supabase (SSR 패키지 - 쿠키 기반 세션 유지)
+export const supabase = createBrowserClient();
 
 // Auth Types
 export interface CoachProfile {
@@ -95,8 +93,16 @@ export async function updatePassword(newPassword: string) {
     return { success: true };
 }
 
-// 현재 로그인한 사용자
+// 현재 로그인한 사용자 (세션 기반 - 더 안정적)
 export async function getCurrentUser() {
+    // 먼저 세션 확인 (localStorage에서 가져옴)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (session?.user) {
+        return session.user;
+    }
+
+    // 세션이 없으면 getUser 시도
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {

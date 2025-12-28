@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LanguageProvider } from "@/hooks/useLanguage";
 
 export const metadata: Metadata = {
     title: "StrengthsNavigator | 강점 코치의 마음을 전하는 카드",
@@ -20,7 +21,9 @@ export default function RootLayout({
     return (
         <html lang="ko">
             <body className="antialiased">
-                {children}
+                <LanguageProvider>
+                    {children}
+                </LanguageProvider>
             </body>
         </html>
     );

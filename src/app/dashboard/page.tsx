@@ -13,8 +13,6 @@ import {
     createClient2,
     updateClient,
     deleteClient,
-    verifyCoachPassword,
-    updateCoachPassword,
     SentCard,
     ClientLastContact,
     CardReply,
@@ -22,6 +20,7 @@ import {
 } from '@/lib/supabase';
 import strengthsI18n from '@/config/strengths_i18n.json';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
+import useLanguage, { LanguageToggle } from '@/hooks/useLanguage';
 
 // 강점 정보 (Gallup 공식 한국어)
 const STRENGTHS: Record<string, { name: string; emoji: string }> = {
@@ -161,6 +160,10 @@ export default function DashboardPage() {
     const [showClientForm, setShowClientForm] = useState(false);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'settings'>('overview');
+    const [selectedCard, setSelectedCard] = useState<SentCard | null>(null);
+
+    // 언어 Hook
+    const { t, lang, mounted } = useLanguage();
 
     // 비밀번호 변경 상태
     const [currentPassword, setCurrentPassword] = useState('');
@@ -232,48 +235,70 @@ export default function DashboardPage() {
         }
     };
 
-    // 비밀번호 변경
+    // 비밀번호 변경 - Supabase Auth 사용
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // 유효성 검사
         if (!currentPassword || !newPassword || !confirmPassword) {
-            alert('⚠️ 모든 필드를 입력해주세요.');
+            alert(lang === 'en' ? '⚠️ Please fill in all fields.' : '⚠️ 모든 필드를 입력해주세요.');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            alert('⚠️ 새 비밀번호가 일치하지 않습니다.');
+            alert(lang === 'en' ? '⚠️ New passwords do not match.' : '⚠️ 새 비밀번호가 일치하지 않습니다.');
             return;
         }
 
-        if (newPassword.length < 4) {
-            alert('⚠️ 비밀번호는 최소 4자 이상이어야 합니다.');
+        if (newPassword.length < 6) {
+            alert(lang === 'en' ? '⚠️ Password must be at least 6 characters.' : '⚠️ 비밀번호는 최소 6자 이상이어야 합니다.');
             return;
         }
 
-        // 현재 비밀번호 확인
-        const isValid = await verifyCoachPassword(currentPassword);
-        if (!isValid) {
-            alert('❌ 현재 비밀번호가 틀렸습니다.');
-            return;
-        }
+        try {
+            // Supabase Auth로 비밀번호 변경
+            const { signIn, updatePassword } = await import('@/lib/auth');
+            const { getCurrentUser } = await import('@/lib/auth');
 
-        // 비밀번호 변경
-        const success = await updateCoachPassword(newPassword);
-        if (success) {
-            alert('✅ 비밀번호가 성공적으로 변경되었습니다!');
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } else {
-            alert('❌ 비밀번호 변경에 실패했습니다. 다시 시도해주세요.');
+            const user = await getCurrentUser();
+            if (!user?.email) {
+                alert(lang === 'en' ? '❌ User not found.' : '❌ 사용자를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 현재 비밀번호 확인 (다시 로그인 시도)
+            const signInResult = await signIn(user.email, currentPassword);
+            if (!signInResult.success) {
+                alert(lang === 'en' ? '❌ Current password is incorrect.' : '❌ 현재 비밀번호가 틀렸습니다.');
+                return;
+            }
+
+            // 비밀번호 변경
+            const result = await updatePassword(newPassword);
+            if (result.success) {
+                alert(lang === 'en' ? '✅ Password changed successfully!' : '✅ 비밀번호가 성공적으로 변경되었습니다!');
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+            } else {
+                alert((lang === 'en' ? '❌ Failed to change password: ' : '❌ 비밀번호 변경 실패: ') + (result.error || ''));
+            }
+        } catch (error) {
+            console.error('Password change error:', error);
+            alert(lang === 'en' ? '❌ Error changing password.' : '❌ 비밀번호 변경 중 오류가 발생했습니다.');
         }
     };
 
     // 로그아웃
     const handleLogout = async () => {
+        // 클라이언트 사이드에서 Supabase 세션 삭제
+        const { supabase } = await import('@/lib/auth');
+        await supabase.auth.signOut();
+
+        // 서버 사이드 쿠키 삭제
         await fetch('/api/auth/logout', { method: 'POST' });
+
+        // 랜딩 페이지로 리다이렉트
         window.location.href = '/';
     };
 
@@ -281,26 +306,138 @@ export default function DashboardPage() {
         <main className="min-h-screen relative overflow-hidden">
             <FloatingStars />
 
+            {/* 카드 상세 보기 모달 */}
+            {selectedCard && (
+                <div
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+                    onClick={() => setSelectedCard(null)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-xl font-bold text-gold-400">
+                                📬 {lang === 'en' ? 'Sent Card' : '발송한 카드'}
+                            </h3>
+                            <button
+                                onClick={() => setSelectedCard(null)}
+                                className="text-white/60 hover:text-white text-xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* 받는 사람 */}
+                        <div className="mb-4">
+                            <p className="text-white/60 text-sm mb-1">
+                                {lang === 'en' ? 'Recipient' : '받는 사람'}
+                            </p>
+                            <p className="text-white text-lg font-medium">{selectedCard.client_name}</p>
+                        </div>
+
+                        {/* 상황 */}
+                        {selectedCard.situation && (
+                            <div className="mb-4">
+                                <p className="text-white/60 text-sm mb-1">
+                                    {lang === 'en' ? 'Situation' : '상황'}
+                                </p>
+                                <p className="text-white">
+                                    {SITUATIONS[selectedCard.situation]?.emoji} {SITUATIONS[selectedCard.situation]?.name}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* 강점 */}
+                        {selectedCard.strength && (
+                            <div className="mb-4">
+                                <p className="text-white/60 text-sm mb-2">
+                                    {lang === 'en' ? 'Strengths' : '강점'}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedCard.strength.split(',').map((s, i) => STRENGTHS[s.trim()] && (
+                                        <span key={i} className="px-3 py-1 bg-gold-500/20 text-gold-400 rounded-full text-sm">
+                                            {STRENGTHS[s.trim()]?.emoji} {STRENGTHS[s.trim()]?.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 상황 설명 */}
+                        {selectedCard.situation_text && (
+                            <div className="mb-4">
+                                <p className="text-white/60 text-sm mb-1">
+                                    {lang === 'en' ? 'Situation Description' : '상황 설명'}
+                                </p>
+                                <p className="text-white/80 bg-white/5 p-3 rounded-lg whitespace-pre-wrap">
+                                    {selectedCard.situation_text}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* 코치 메시지 */}
+                        <div className="mb-4">
+                            <p className="text-white/60 text-sm mb-1">
+                                💌 {lang === 'en' ? 'Message Content' : '메시지 내용'}
+                            </p>
+                            <div className="bg-gradient-to-br from-gold-500/10 to-gold-600/10 border border-gold-400/30 p-4 rounded-xl">
+                                <p className="text-white leading-relaxed whitespace-pre-wrap">
+                                    {selectedCard.coach_message || (lang === 'en' ? '(No message)' : '(메시지 없음)')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 발송일 */}
+                        <div className="pt-4 border-t border-white/10">
+                            <p className="text-white/40 text-sm">
+                                📅 {lang === 'en' ? 'Sent:' : '발송일:'} {formatDateTime(selectedCard.sent_at)}
+                            </p>
+                        </div>
+
+                        {/* 카드 다시 보기 링크 */}
+                        {selectedCard.id && !selectedCard.id.startsWith('local-') && (
+                            <div className="mt-4">
+                                <a
+                                    href={`/c/${selectedCard.id}?lang=${lang}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500/20 text-gold-400 rounded-lg hover:bg-gold-500/30 transition-colors text-sm"
+                                >
+                                    🔗 {lang === 'en' ? 'Open Card Link' : '카드 링크 열기'}
+                                </a>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+            )}
             <div className="relative z-10 min-h-screen py-8 px-4">
                 {/* 헤더 */}
                 <div className="max-w-6xl mx-auto mb-8">
                     <div className="flex items-center justify-between">
                         <Link href="/" className="text-white/60 hover:text-gold-400 transition-colors">
-                            ← 홈으로
+                            {lang === 'en' ? '← Home' : '← 홈으로'}
                         </Link>
                         <div className="text-center">
-                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">대시보드</h1>
-                            <p className="text-white/60 text-sm mt-1">고객 관리 & 카드 발송 현황</p>
+                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">
+                                {lang === 'en' ? 'Dashboard' : '대시보드'}
+                            </h1>
+                            <p className="text-white/60 text-sm mt-1">
+                                {lang === 'en' ? 'Client Management & Card History' : '고객 관리 & 카드 발송 현황'}
+                            </p>
                         </div>
                         <div className="flex items-center gap-4">
+                            <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
                             <Link href="/create" className="text-gold-400 hover:text-gold-300 transition-colors">
-                                + 카드 만들기
+                                {t.dashboard.createCard}
                             </Link>
                             <button
                                 onClick={handleLogout}
                                 className="text-white/40 hover:text-red-400 transition-colors text-sm"
                             >
-                                로그아웃
+                                {t.dashboard.logout}
                             </button>
                         </div>
                     </div>
@@ -314,7 +451,7 @@ export default function DashboardPage() {
                                 : 'text-white/60 hover:text-white'
                                 }`}
                         >
-                            👀 개요
+                            👀 {t.dashboard.overview}
                         </button>
                         <button
                             onClick={() => setActiveTab('clients')}
@@ -323,7 +460,7 @@ export default function DashboardPage() {
                                 : 'text-white/60 hover:text-white'
                                 }`}
                         >
-                            👥 전체 고객 (Clients)
+                            👥 {t.dashboard.clients}
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
@@ -332,14 +469,14 @@ export default function DashboardPage() {
                                 : 'text-white/60 hover:text-white'
                                 }`}
                         >
-                            ⚙️ 설정
+                            ⚙️ {t.dashboard.settings}
                         </button>
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <div className="text-white/60">로딩 중...</div>
+                        <div className="text-white/60">{t.common.loadingData}</div>
                     </div>
                 ) : (
                     <div className="max-w-6xl mx-auto space-y-8">
@@ -355,7 +492,7 @@ export default function DashboardPage() {
                                         transition={{ delay: 0.1 }}
                                     >
                                         <p className="text-3xl font-bold text-gold-400">{stats.totalClients}</p>
-                                        <p className="text-white/60 mt-1">전체 고객 (Clients)</p>
+                                        <p className="text-white/60 mt-1">{t.dashboard.stats.totalClients}</p>
                                     </motion.div>
                                     <motion.div
                                         className="glass rounded-2xl p-6 text-center"
@@ -364,7 +501,7 @@ export default function DashboardPage() {
                                         transition={{ delay: 0.2 }}
                                     >
                                         <p className="text-3xl font-bold text-gold-400">{stats.totalCardsSent}</p>
-                                        <p className="text-white/60 mt-1">발송한 카드 (Sent Cards)</p>
+                                        <p className="text-white/60 mt-1">{t.dashboard.stats.cardsSent}</p>
                                     </motion.div>
                                     <motion.div
                                         className="glass rounded-2xl p-6 text-center"
@@ -373,7 +510,7 @@ export default function DashboardPage() {
                                         transition={{ delay: 0.3 }}
                                     >
                                         <p className="text-3xl font-bold text-red-400">{stats.clientsNeedingFollowup}</p>
-                                        <p className="text-white/60 mt-1">안부 필요 고객</p>
+                                        <p className="text-white/60 mt-1">{t.dashboard.stats.needsFollowup}</p>
                                     </motion.div>
                                 </div>
 
@@ -386,7 +523,7 @@ export default function DashboardPage() {
                                         transition={{ delay: 0.35 }}
                                     >
                                         <h2 className="text-lg font-bold text-gold-400 mb-4 flex items-center gap-2">
-                                            💌 받은 답장 (Card Replies)
+                                            💌 {lang === 'en' ? 'Card Replies' : '받은 답장'}
                                             <span className="bg-gold-500 text-ocean-900 text-xs font-bold px-2 py-1 rounded-full">
                                                 {unreadReplies.length}
                                             </span>
@@ -403,14 +540,14 @@ export default function DashboardPage() {
                                                             "{reply.message}"
                                                         </p>
                                                         <p className="text-white/40 text-xs mt-2">
-                                                            답장 날짜: {formatDate(reply.created_at)}
+                                                            {lang === 'en' ? 'Reply date:' : '답장 날짜:'} {formatDate(reply.created_at)}
                                                         </p>
                                                     </div>
                                                     <button
                                                         onClick={() => handleMarkAsRead(reply.id)}
                                                         className="text-gold-400 hover:text-gold-300 text-sm ml-4"
                                                     >
-                                                        읽음 ✓
+                                                        {lang === 'en' ? 'Read ✓' : '읽음 ✓'}
                                                     </button>
                                                 </div>
                                             ))}
@@ -427,8 +564,10 @@ export default function DashboardPage() {
                                         transition={{ delay: 0.4 }}
                                     >
                                         <h2 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
-                                            🔔 안부를 물을 때가 된 고객
-                                            <span className="text-xs font-normal text-white/50">(마지막 카드 발송 후 3개월 경과)</span>
+                                            🔔 {lang === 'en' ? 'Clients Needing Follow-up' : '안부를 물을 때가 된 고객'}
+                                            <span className="text-xs font-normal text-white/50">
+                                                {lang === 'en' ? '(3+ months since last card)' : '(마지막 카드 발송 후 3개월 경과)'}
+                                            </span>
                                         </h2>
                                         <div className="space-y-3">
                                             {followupClients.map((client) => (
@@ -449,15 +588,17 @@ export default function DashboardPage() {
                                                     <div className="text-right">
                                                         <p className="text-white/60 text-sm">
                                                             {client.last_card_sent
-                                                                ? `${client.days_since_last_card}일 전 발송`
-                                                                : '카드 발송 이력 없음'
+                                                                ? (lang === 'en'
+                                                                    ? `Sent ${client.days_since_last_card} days ago`
+                                                                    : `${client.days_since_last_card}일 전 발송`)
+                                                                : (lang === 'en' ? 'No cards sent' : '카드 발송 이력 없음')
                                                             }
                                                         </p>
                                                         <Link
                                                             href={`/create?client=${encodeURIComponent(client.name)}`}
                                                             className="text-gold-400 text-sm hover:text-gold-300"
                                                         >
-                                                            카드 보내기 →
+                                                            {lang === 'en' ? 'Send Card →' : '카드 보내기 →'}
                                                         </Link>
                                                     </div>
                                                 </div>
@@ -473,15 +614,19 @@ export default function DashboardPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
                                 >
-                                    <h2 className="text-lg font-bold text-white mb-4">📬 발송한 카드 (Sent Cards)</h2>
+                                    <h2 className="text-lg font-bold text-white mb-4">
+                                        📬 {lang === 'en' ? 'Sent Cards' : '발송한 카드'}
+                                    </h2>
                                     {recentCards.length === 0 ? (
                                         <div className="text-center py-10">
-                                            <p className="text-white/50 mb-4">아직 발송한 카드가 없습니다</p>
+                                            <p className="text-white/50 mb-4">
+                                                {lang === 'en' ? 'No cards sent yet' : '아직 발송한 카드가 없습니다'}
+                                            </p>
                                             <Link
                                                 href="/create"
                                                 className="inline-block px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors"
                                             >
-                                                첫 카드 만들기 ✨
+                                                {lang === 'en' ? 'Create First Card ✨' : '첫 카드 만들기 ✨'}
                                             </Link>
                                         </div>
                                     ) : (
@@ -489,14 +634,17 @@ export default function DashboardPage() {
                                             {recentCards.map((card) => (
                                                 <div
                                                     key={card.id}
-                                                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl"
+                                                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+                                                    onClick={() => setSelectedCard(card)}
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div className="text-2xl">
                                                             {SEASONS[card.season || '']?.emoji || '✉️'}
                                                         </div>
                                                         <div className="flex-1">
-                                                            <p className="text-white font-medium">받는 사람: {card.client_name}</p>
+                                                            <p className="text-white font-medium">
+                                                                {lang === 'en' ? 'To:' : '받는 사람:'} {card.client_name}
+                                                            </p>
                                                             <div className="flex flex-wrap gap-2 text-sm text-white/60 mt-1">
                                                                 {card.situation && (
                                                                     <span>{SITUATIONS[card.situation]?.emoji} {SITUATIONS[card.situation]?.name}</span>
@@ -513,10 +661,13 @@ export default function DashboardPage() {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-right flex items-center gap-4">
                                                         <p className="text-white/60 text-sm">
-                                                            발송일: {formatDateTime(card.sent_at)}
+                                                            {lang === 'en' ? 'Sent:' : '발송일:'} {formatDateTime(card.sent_at)}
                                                         </p>
+                                                        <span className="text-gold-400 text-sm">
+                                                            {lang === 'en' ? 'View →' : '보기 →'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -530,7 +681,9 @@ export default function DashboardPage() {
                         {activeTab === 'clients' && (
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <h2 className="text-xl font-bold text-white">👥 전체 고객 관리</h2>
+                                    <h2 className="text-xl font-bold text-white">
+                                        👥 {lang === 'en' ? 'Client Management' : '전체 고객 관리'}
+                                    </h2>
                                     <button
                                         onClick={() => {
                                             setEditingClient(null);
@@ -538,7 +691,7 @@ export default function DashboardPage() {
                                         }}
                                         className="px-4 py-2 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors"
                                     >
-                                        + 새 고객 추가
+                                        {lang === 'en' ? '+ Add Client' : '+ 새 고객 추가'}
                                     </button>
                                 </div>
 
@@ -546,7 +699,9 @@ export default function DashboardPage() {
                                 {showClientForm && (
                                     <div className="glass rounded-2xl p-6 border border-gold-400/30">
                                         <h3 className="text-lg font-bold text-white mb-4">
-                                            {editingClient ? '고객 정보 수정' : '새 고객 등록'}
+                                            {editingClient
+                                                ? (lang === 'en' ? 'Edit Client' : '고객 정보 수정')
+                                                : (lang === 'en' ? 'Add New Client' : '새 고객 등록')}
                                         </h3>
                                         <form onSubmit={(e) => {
                                             e.preventDefault();
@@ -564,19 +719,23 @@ export default function DashboardPage() {
                                             });
                                         }} className="space-y-4">
                                             <div>
-                                                <label className="block text-white/80 text-sm mb-1">이름 (필수)</label>
+                                                <label className="block text-white/80 text-sm mb-1">
+                                                    {lang === 'en' ? 'Name (Required)' : '이름 (필수)'}
+                                                </label>
                                                 <input
                                                     type="text"
                                                     name="name"
                                                     required
                                                     defaultValue={editingClient?.name || ''}
                                                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40"
-                                                    placeholder="고객 이름"
+                                                    placeholder={lang === 'en' ? 'Client name' : '고객 이름'}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-white/80 text-sm mb-1">이메일</label>
+                                                    <label className="block text-white/80 text-sm mb-1">
+                                                        {lang === 'en' ? 'Email' : '이메일'}
+                                                    </label>
                                                     <input
                                                         type="email"
                                                         name="email"
@@ -586,7 +745,9 @@ export default function DashboardPage() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-white/80 text-sm mb-1">전화번호</label>
+                                                    <label className="block text-white/80 text-sm mb-1">
+                                                        {lang === 'en' ? 'Phone' : '전화번호'}
+                                                    </label>
                                                     <input
                                                         type="tel"
                                                         name="phone"
@@ -597,7 +758,9 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-white/80 text-sm mb-2">강점 5개 선택</label>
+                                                <label className="block text-white/80 text-sm mb-2">
+                                                    {lang === 'en' ? 'Select 5 Strengths' : '강점 5개 선택'}
+                                                </label>
                                                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                                                     {[1, 2, 3, 4, 5].map((num) => (
                                                         <select
@@ -606,7 +769,9 @@ export default function DashboardPage() {
                                                             defaultValue={editingClient?.[`strength_${num}` as keyof Client] as string || ''}
                                                             className="px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm"
                                                         >
-                                                            <option value="">강점 {num}</option>
+                                                            <option value="">
+                                                                {lang === 'en' ? `Strength ${num}` : `강점 ${num}`}
+                                                            </option>
                                                             {Object.entries(strengthsI18n).map(([id, strength]) => (
                                                                 <option key={id} value={id} className="bg-ocean-900">
                                                                     {strength.emoji} {strength.ko}
@@ -617,13 +782,15 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-white/80 text-sm mb-1">특이사항 / 메모</label>
+                                                <label className="block text-white/80 text-sm mb-1">
+                                                    {lang === 'en' ? 'Notes / Memo' : '특이사항 / 메모'}
+                                                </label>
                                                 <textarea
                                                     name="memo"
                                                     rows={3}
                                                     defaultValue={editingClient?.memo || ''}
                                                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none"
-                                                    placeholder="고객에 대한 특이사항이나 메모를 입력하세요"
+                                                    placeholder={lang === 'en' ? 'Enter notes about the client' : '고객에 대한 특이사항이나 메모를 입력하세요'}
                                                 />
                                             </div>
                                             <div className="flex gap-3">
@@ -631,7 +798,7 @@ export default function DashboardPage() {
                                                     type="submit"
                                                     className="flex-1 px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors"
                                                 >
-                                                    💾 저장
+                                                    💾 {lang === 'en' ? 'Save' : '저장'}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -641,7 +808,7 @@ export default function DashboardPage() {
                                                     }}
                                                     className="px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
                                                 >
-                                                    취소
+                                                    {lang === 'en' ? 'Cancel' : '취소'}
                                                 </button>
                                             </div>
                                         </form>
@@ -651,7 +818,9 @@ export default function DashboardPage() {
                                 {/* 고객 목록 */}
                                 {allClients.length === 0 ? (
                                     <div className="glass rounded-2xl p-12 text-center">
-                                        <p className="text-white/50 mb-4">등록된 고객이 없습니다</p>
+                                        <p className="text-white/50 mb-4">
+                                            {lang === 'en' ? 'No clients registered' : '등록된 고객이 없습니다'}
+                                        </p>
                                     </div>
                                 ) : (
                                     <div className="glass rounded-2xl p-6">
@@ -689,13 +858,13 @@ export default function DashboardPage() {
                                                                 }}
                                                                 className="text-gold-400 hover:text-gold-300 text-sm px-3 py-1 bg-gold-500/10 rounded-lg"
                                                             >
-                                                                ✏️ 수정
+                                                                ✏️ {lang === 'en' ? 'Edit' : '수정'}
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteClient(client.id)}
                                                                 className="text-red-400 hover:text-red-300 text-sm px-3 py-1 bg-red-500/10 rounded-lg"
                                                             >
-                                                                🗑️ 삭제
+                                                                🗑️ {lang === 'en' ? 'Delete' : '삭제'}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -710,46 +879,56 @@ export default function DashboardPage() {
                         {/* 설정 탭 */}
                         {activeTab === 'settings' && (
                             <div className="space-y-6">
-                                <h2 className="text-xl font-bold text-white">⚙️ 설정</h2>
+                                <h2 className="text-xl font-bold text-white">
+                                    ⚙️ {lang === 'en' ? 'Settings' : '설정'}
+                                </h2>
 
                                 {/* 프로필 편집 */}
                                 <ProfileSettings />
 
                                 {/* 비밀번호 변경 */}
                                 <div className="glass rounded-2xl p-6 max-w-2xl">
-                                    <h3 className="text-lg font-bold text-white mb-4">🔐 비밀번호 변경</h3>
+                                    <h3 className="text-lg font-bold text-white mb-4">
+                                        🔐 {lang === 'en' ? 'Change Password' : '비밀번호 변경'}
+                                    </h3>
                                     <form onSubmit={handleChangePassword} className="space-y-4">
                                         <div>
-                                            <label className="block text-white/80 text-sm mb-2">현재 비밀번호</label>
+                                            <label className="block text-white/80 text-sm mb-2">
+                                                {lang === 'en' ? 'Current Password' : '현재 비밀번호'}
+                                            </label>
                                             <input
                                                 type="password"
                                                 value={currentPassword}
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
-                                                placeholder="현재 비밀번호 입력"
+                                                placeholder={lang === 'en' ? 'Enter current password' : '현재 비밀번호 입력'}
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-white/80 text-sm mb-2">새 비밀번호 (최소 4자)</label>
+                                            <label className="block text-white/80 text-sm mb-2">
+                                                {lang === 'en' ? 'New Password (min 6 chars)' : '새 비밀번호 (최소 6자)'}
+                                            </label>
                                             <input
                                                 type="password"
                                                 value={newPassword}
                                                 onChange={(e) => setNewPassword(e.target.value)}
                                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
-                                                placeholder="새 비밀번호 입력"
+                                                placeholder={lang === 'en' ? 'Enter new password' : '새 비밀번호 입력'}
                                                 required
                                                 minLength={4}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-white/80 text-sm mb-2">새 비밀번호 확인</label>
+                                            <label className="block text-white/80 text-sm mb-2">
+                                                {lang === 'en' ? 'Confirm New Password' : '새 비밀번호 확인'}
+                                            </label>
                                             <input
                                                 type="password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-gold-400"
-                                                placeholder="새 비밀번호 다시 입력"
+                                                placeholder={lang === 'en' ? 'Confirm new password' : '새 비밀번호 다시 입력'}
                                                 required
                                                 minLength={4}
                                             />
@@ -758,12 +937,15 @@ export default function DashboardPage() {
                                             type="submit"
                                             className="w-full px-6 py-3 bg-gold-500 text-ocean-900 rounded-xl font-medium hover:bg-gold-400 transition-colors"
                                         >
-                                            🔒 비밀번호 변경
+                                            🔒 {lang === 'en' ? 'Change Password' : '비밀번호 변경'}
                                         </button>
                                     </form>
                                     <div className="mt-4 p-4 bg-white/5 rounded-xl">
                                         <p className="text-white/60 text-sm">
-                                            💡 <strong>팁:</strong> 보안을 위해 주기적으로 비밀번호를 변경하세요.
+                                            💡 <strong>{lang === 'en' ? 'Tip:' : '팁:'}</strong>
+                                            {lang === 'en'
+                                                ? ' Change your password regularly for security.'
+                                                : ' 보안을 위해 주기적으로 비밀번호를 변경하세요.'}
                                         </p>
                                     </div>
                                 </div>

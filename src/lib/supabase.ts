@@ -1,14 +1,11 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient as createBrowserClient } from './supabase-browser';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-// 환경 변수에서 Supabase 설정 가져오기
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Supabase 클라이언트 (환경변수 없으면 null)
+// SSR 기반 Supabase 클라이언트 (쿠키 기반 세션 유지 - auth.ts와 동일)
 let supabase: SupabaseClient | null = null;
 
-if (supabaseUrl && supabaseAnonKey) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    supabase = createBrowserClient();
 } else {
     console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. 로컬 모드로 실행됩니다.');
 }
@@ -158,6 +155,24 @@ export async function deleteClient(id: string): Promise<boolean> {
     return true;
 }
 
+// 공용 코치 프로필 조회 (카드용)
+export async function getPublicCoachProfile() {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+        .from('coach_profiles')
+        .select('name, nickname, brand_name, title, tagline, profile_image_url, description, title_en, tagline_en, description_en')
+        .limit(1)
+        .single();
+
+    if (error) {
+        console.error('프로필 조회 오류:', error);
+        return null;
+    }
+
+    return data;
+}
+
 
 // 카드 발송 관련 함수
 export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | null> {
@@ -166,9 +181,21 @@ export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | 
         return { id: 'local-' + Date.now(), ...card } as SentCard;
     }
 
+    // 현재 로그인한 사용자 가져오기
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+        console.error('로그인 필요:', userError);
+        return null;
+    }
+
+    // coach_id 추가하여 저장
     const { data, error } = await supabase
         .from('sent_cards')
-        .insert([card])
+        .insert([{
+            ...card,
+            coach_id: user.id  // 현재 사용자 ID 자동 추가
+        }])
         .select()
         .single();
 
