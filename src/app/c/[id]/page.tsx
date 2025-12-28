@@ -394,7 +394,7 @@ function ShortCardContent({ params }: { params: { id: string } }) {
 
             {/* 계절 효과 표시 */}
             {cardData?.season && (
-                <SeasonalEffect season={cardData.season} count={30} />
+                <SeasonalEffect season={cardData.season as "winter" | "spring" | "summer" | "autumn"} count={30} />
             )}
 
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">

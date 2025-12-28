@@ -11,9 +11,21 @@ export interface CoachProfile {
     id: string;
     email: string;
     name: string;
+    nickname?: string;
+    brand_name?: string;
+    tagline?: string;
+    title?: string;
+    description?: string;
     bio?: string;
     profile_image_url?: string;
     phone?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    website?: string;
+    instagram?: string;
+    facebook?: string;
+    linkedin?: string;
+    youtube?: string;
     created_at: string;
     updated_at: string;
 }
