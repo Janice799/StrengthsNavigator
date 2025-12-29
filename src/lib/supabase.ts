@@ -189,12 +189,16 @@ export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | 
         return null;
     }
 
-    // coach_id 추가하여 저장
+    const now = new Date().toISOString();
+
+    // coach_id, sent_at, created_at 추가하여 저장
     const { data, error } = await supabase
         .from('sent_cards')
         .insert([{
             ...card,
-            coach_id: user.id  // 현재 사용자 ID 자동 추가
+            coach_id: user.id,  // 현재 사용자 ID 자동 추가
+            sent_at: now,       // 발송 시간
+            created_at: now     // 생성 시간
         }])
         .select()
         .single();
