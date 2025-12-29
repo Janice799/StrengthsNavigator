@@ -13,6 +13,7 @@ import {
     createClient2,
     updateClient,
     deleteClient,
+    deleteSentCard,
     SentCard,
     ClientLastContact,
     CardReply,
@@ -399,7 +400,7 @@ export default function DashboardPage() {
 
                         {/* 카드 다시 보기 링크 */}
                         {selectedCard.id && !selectedCard.id.startsWith('local-') && (
-                            <div className="mt-4">
+                            <div className="mt-4 flex gap-3">
                                 <a
                                     href={`/c/${selectedCard.id}?lang=${lang}`}
                                     target="_blank"
@@ -408,6 +409,25 @@ export default function DashboardPage() {
                                 >
                                     🔗 {lang === 'en' ? 'Open Card Link' : '카드 링크 열기'}
                                 </a>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm(lang === 'en'
+                                            ? 'Are you sure you want to delete this card? This action cannot be undone.'
+                                            : '정말 이 카드를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.')) {
+                                            const success = await deleteSentCard(selectedCard.id);
+                                            if (success) {
+                                                setRecentCards(prev => prev.filter(c => c.id !== selectedCard.id));
+                                                setSelectedCard(null);
+                                                alert(lang === 'en' ? '🗑️ Card deleted.' : '🗑️ 카드가 삭제되었습니다.');
+                                            } else {
+                                                alert(lang === 'en' ? '❌ Failed to delete card.' : '❌ 카드 삭제에 실패했습니다.');
+                                            }
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
+                                >
+                                    🗑️ {lang === 'en' ? 'Delete Card' : '카드 삭제'}
+                                </button>
                             </div>
                         )}
                     </motion.div>
@@ -948,6 +968,64 @@ export default function DashboardPage() {
                                                 : ' 보안을 위해 주기적으로 비밀번호를 변경하세요.'}
                                         </p>
                                     </div>
+                                </div>
+
+                                {/* 계정 탈퇴 */}
+                                <div className="glass rounded-2xl p-6 max-w-2xl border border-red-500/30">
+                                    <h3 className="text-lg font-bold text-red-400 mb-4">
+                                        ⚠️ {lang === 'en' ? 'Delete Account' : '계정 탈퇴'}
+                                    </h3>
+                                    <div className="p-4 bg-red-500/10 rounded-xl mb-4">
+                                        <p className="text-white/80 text-sm">
+                                            {lang === 'en'
+                                                ? '⚠️ Warning: Deleting your account will permanently remove:'
+                                                : '⚠️ 경고: 계정을 삭제하면 다음 데이터가 영구적으로 삭제됩니다:'}
+                                        </p>
+                                        <ul className="text-white/60 text-sm mt-2 list-disc list-inside space-y-1">
+                                            <li>{lang === 'en' ? 'Your coach profile' : '코치 프로필'}</li>
+                                            <li>{lang === 'en' ? 'All client information' : '모든 고객 정보'}</li>
+                                            <li>{lang === 'en' ? 'All sent cards' : '발송한 모든 카드'}</li>
+                                            <li>{lang === 'en' ? 'All received replies' : '받은 모든 답장'}</li>
+                                        </ul>
+                                        <p className="text-red-400 text-sm mt-3 font-medium">
+                                            {lang === 'en'
+                                                ? '❌ This action cannot be undone!'
+                                                : '❌ 이 작업은 되돌릴 수 없습니다!'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            const confirmText = lang === 'en' ? 'DELETE' : '삭제';
+                                            const userInput = prompt(
+                                                lang === 'en'
+                                                    ? `To confirm account deletion, type "${confirmText}" below:`
+                                                    : `계정 삭제를 확인하려면 아래에 "${confirmText}"를 입력하세요:`
+                                            );
+
+                                            if (userInput === confirmText) {
+                                                const { deleteAccount } = await import('@/lib/auth');
+                                                const result = await deleteAccount();
+
+                                                if (result.success) {
+                                                    alert(lang === 'en'
+                                                        ? '✅ Account deleted. Goodbye!'
+                                                        : '✅ 계정이 삭제되었습니다. 안녕히 가세요!');
+                                                    window.location.href = '/';
+                                                } else {
+                                                    alert(lang === 'en'
+                                                        ? '❌ Failed to delete account. Please try again.'
+                                                        : '❌ 계정 삭제에 실패했습니다. 다시 시도해주세요.');
+                                                }
+                                            } else if (userInput !== null) {
+                                                alert(lang === 'en'
+                                                    ? 'Account deletion cancelled. Text did not match.'
+                                                    : '계정 삭제가 취소되었습니다. 입력값이 일치하지 않습니다.');
+                                            }
+                                        }}
+                                        className="w-full px-6 py-3 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
+                                    >
+                                        🗑️ {lang === 'en' ? 'Delete My Account' : '계정 삭제하기'}
+                                    </button>
                                 </div>
                             </div>
                         )}

@@ -254,6 +254,22 @@ export async function getCardById(id: string): Promise<SentCard | null> {
     return data;
 }
 
+// 발송한 카드 삭제
+export async function deleteSentCard(cardId: string): Promise<boolean> {
+    if (!supabase) return false;
+
+    const { error } = await supabase
+        .from('sent_cards')
+        .delete()
+        .eq('id', cardId);
+
+    if (error) {
+        console.error('카드 삭제 오류:', error);
+        return false;
+    }
+    return true;
+}
+
 // 팔로업 필요 고객 조회
 export async function getClientsNeedingFollowup(): Promise<ClientLastContact[]> {
     if (!supabase) return [];

@@ -196,3 +196,31 @@ export async function uploadProfileImage(userId: string, file: File) {
 
     return { success: true, url: publicUrl };
 }
+
+// 계정 탈퇴 (모든 데이터 삭제)
+export async function deleteAccount() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+
+        // 관련 데이터 삭제 (순서 중요: 외래키 제약 고려)
+        // 1. 발송한 카드 삭제
+        await supabase.from('sent_cards').delete().eq('coach_id', user.id);
+
+        // 2. 고객 삭제
+        await supabase.from('clients').delete().eq('coach_id', user.id);
+
+        // 3. 코치 프로필 삭제
+        await supabase.from('coach_profiles').delete().eq('id', user.id);
+
+        // 4. Supabase Auth 세션 삭제 (실제 계정 삭제는 별도 처리 필요)
+        await supabase.auth.signOut();
+
+        return { success: true };
+    } catch (error) {
+        console.error('계정 삭제 오류:', error);
+        return { success: false, error: 'Failed to delete account' };
+    }
+}
