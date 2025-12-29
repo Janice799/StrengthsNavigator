@@ -30,6 +30,7 @@ export interface Client {
 
 export interface SentCard {
     id: string;
+    coach_id?: string;
     client_id?: string;
     client_name: string;
     season?: string;

@@ -377,7 +377,9 @@ export default function CardCreatorPage() {
                 const url = `${baseUrl}/c/${savedCard.id}?lang=${language}`;
                 setCardUrl(url);
             } else {
-                // 로컬 모드거나 저장 실패 시 긴 링크 (Fallback)
+                // 저장 실패 시 알림 및 긴 링크 Fallback
+                console.warn('⚠️ DB 저장 실패, 긴 링크로 대체됨');
+
                 const params = new URLSearchParams({
                     name: recipientName,
                     strengths: selectedStrengths.join(','),
@@ -393,6 +395,9 @@ export default function CardCreatorPage() {
             setSaveSuccess(true);
         } catch (error) {
             console.error('카드 저장 오류:', error);
+            alert(language === 'en'
+                ? '⚠️ Card save failed. Please try again.'
+                : '⚠️ 카드 저장에 실패했습니다. 다시 시도해주세요.');
         } finally {
             setIsSaving(false);
         }
