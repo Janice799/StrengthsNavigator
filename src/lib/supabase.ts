@@ -185,29 +185,46 @@ export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | 
     // 현재 로그인한 사용자 가져오기
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-        console.error('로그인 필요:', userError);
+    if (userError) {
+        console.error('❌ 사용자 조회 에러:', userError.message);
         return null;
     }
 
+    if (!user) {
+        console.error('❌ 로그인 필요: 사용자 없음');
+        return null;
+    }
+
+    console.log('✅ 사용자 확인됨:', user.id, user.email);
+
     const now = new Date().toISOString();
+    const insertData = {
+        ...card,
+        coach_id: user.id,
+        sent_at: now,
+        created_at: now
+    };
+
+    console.log('📤 저장할 데이터:', JSON.stringify(insertData, null, 2));
 
     // coach_id, sent_at, created_at 추가하여 저장
     const { data, error } = await supabase
         .from('sent_cards')
-        .insert([{
-            ...card,
-            coach_id: user.id,  // 현재 사용자 ID 자동 추가
-            sent_at: now,       // 발송 시간
-            created_at: now     // 생성 시간
-        }])
+        .insert([insertData])
         .select()
         .single();
 
     if (error) {
-        console.error('카드 저장 오류:', error);
+        console.error('❌ 카드 저장 실패:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+        });
         return null;
     }
+
+    console.log('✅ 카드 저장 성공:', data.id);
     return data;
 }
 
