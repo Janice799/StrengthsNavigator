@@ -204,8 +204,8 @@ export default function ProfileSettings() {
                         rows={3}
                         className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white resize-none"
                         placeholder={lang === 'en'
-                            ? "e.g., Gallup Certified Strengths Coach\nICF Certified Coach"
-                            : "예: Gallup Certified Strengths Coach\nICF 인증 코치\n기업 전문 강점 코칭"}
+                            ? "e.g., Certified Strengths Coach\nICF Certified Coach"
+                            : "예: 인증 강점 코치\nICF 인증 코치\n기업 전문 강점 코칭"}
                     />
                 </div>
 

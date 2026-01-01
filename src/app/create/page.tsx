@@ -11,7 +11,7 @@ import i18n from '@/config/i18n.json';
 import { searchClients, saveSentCard, Client, getPublicCoachProfile } from '@/lib/supabase';
 import { LanguageToggle } from '@/hooks/useLanguage';
 
-// 34가지 CliftonStrengths (Gallup 공식 한국어)
+// 34가지 강점 테마
 const STRENGTHS = [
     { id: 'achiever', name: 'Achiever (성취)', domain: 'executing', emoji: '🏆' },
     { id: 'activator', name: 'Activator (행동)', domain: 'influencing', emoji: '⚡' },

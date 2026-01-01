@@ -266,8 +266,13 @@ export default function LandingPage() {
                         transition={{ delay: 1 }}
                     >
                         <div className="divider-elegant w-32 mx-auto mb-3" />
-                        <p className="text-white/40 text-xs">
+                        <p className="text-white/40 text-xs mb-2">
                             {lang === 'en' ? 'Where strengths coaching meets heartfelt connection' : '강점 코칭과 진심이 만나는 곳'}
+                        </p>
+                        <p className="text-white/20 text-[10px] max-w-2xl mx-auto px-4">
+                            {lang === 'en'
+                                ? 'Gallup® and CliftonStrengths® are trademarks of Gallup, Inc. This product is not affiliated with or endorsed by Gallup, Inc.'
+                                : 'Gallup®, CliftonStrengths®는 Gallup, Inc.의 상표입니다. 본 서비스는 Gallup, Inc.와 제휴하거나 보증받지 않았습니다.'}
                         </p>
                     </motion.footer>
                 </div>
@@ -447,8 +452,13 @@ export default function LandingPage() {
                     transition={{ delay: 1 }}
                 >
                     <div className="divider-elegant w-32 mx-auto mb-3" />
-                    <p className="text-white/40 text-xs">
+                    <p className="text-white/40 text-xs mb-2">
                         {lang === 'en' ? 'Where strengths coaching meets heartfelt connection' : '강점 코칭과 진심이 만나는 곳'}
+                    </p>
+                    <p className="text-white/20 text-[10px] max-w-2xl mx-auto px-4">
+                        {lang === 'en'
+                            ? 'Gallup® and CliftonStrengths® are trademarks of Gallup, Inc. This product is not affiliated with or endorsed by Gallup, Inc.'
+                            : 'Gallup®, CliftonStrengths®는 Gallup, Inc.의 상표입니다. 본 서비스는 Gallup, Inc.와 제휴하거나 보증받지 않았습니다.'}
                     </p>
                 </motion.footer>
             </div>

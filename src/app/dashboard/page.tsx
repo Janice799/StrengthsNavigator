@@ -24,7 +24,7 @@ import strengthsI18n from '@/config/strengths_i18n.json';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
 import useLanguage, { LanguageToggle } from '@/hooks/useLanguage';
 
-// 강점 정보 (Gallup 공식 한국어)
+// 강점 정보
 const STRENGTHS: Record<string, { name: string; emoji: string }> = {
     'achiever': { name: '성취', emoji: '🏆' },
     'activator': { name: '행동', emoji: '⚡' },
