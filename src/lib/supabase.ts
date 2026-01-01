@@ -88,23 +88,41 @@ export async function getClientByName(name: string): Promise<Client | null> {
 export async function createClient2(client: Partial<Client>): Promise<Client | null> {
     if (!supabase) return null;
 
-    const clientData = {
-        ...client,
-        created_at: new Date().toISOString()
-    };
+    try {
+        // 현재 로그인한 사용자 가져오기
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    const { data, error } = await supabase
-        .from('clients')
-        .insert([clientData])
-        .select()
-        .single();
+        if (userError || !user) {
+            console.error('사용자 인증 오류:', userError?.message || '로그인 필요');
+            alert('로그인이 필요합니다.');
+            return null;
+        }
 
-    if (error) {
-        console.error('클라이언트 생성 오류:', error);
-        alert(`고객 저장 실패: ${error.message}`);
+        const clientData = {
+            ...client,
+            coach_id: user.id,
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('clients')
+            .insert([clientData])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('클라이언트 생성 오류:', error);
+            alert(`고객 저장 실패: ${error.message}`);
+            return null;
+        }
+
+        console.log('✅ 고객 저장 성공:', data.id);
+        return data;
+    } catch (error) {
+        console.error('고객 생성 중 예외 발생:', error);
+        alert('고객 저장 중 오류가 발생했습니다.');
         return null;
     }
-    return data;
 }
 
 export async function updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
@@ -144,16 +162,33 @@ export async function getAllClients(): Promise<Client[]> {
 export async function deleteClient(id: string): Promise<boolean> {
     if (!supabase) return false;
 
-    const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
+    try {
+        // 현재 로그인한 사용자 가져오기
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (error) {
-        console.error('클라이언트 삭제 오류:', error);
+        if (userError || !user) {
+            console.error('사용자 인증 오류:', userError?.message || '로그인 필요');
+            return false;
+        }
+
+        // 본인의 고객만 삭제 가능하도록 coach_id 조건 추가
+        const { error } = await supabase
+            .from('clients')
+            .delete()
+            .eq('id', id)
+            .eq('coach_id', user.id);
+
+        if (error) {
+            console.error('클라이언트 삭제 오류:', error);
+            return false;
+        }
+
+        console.log('✅ 고객 삭제 성공:', id);
+        return true;
+    } catch (error) {
+        console.error('고객 삭제 중 예외 발생:', error);
         return false;
     }
-    return true;
 }
 
 // 공용 코치 프로필 조회 (카드용)
@@ -280,16 +315,33 @@ export async function getCardById(id: string): Promise<SentCard | null> {
 export async function deleteSentCard(cardId: string): Promise<boolean> {
     if (!supabase) return false;
 
-    const { error } = await supabase
-        .from('sent_cards')
-        .delete()
-        .eq('id', cardId);
+    try {
+        // 현재 로그인한 사용자 가져오기
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (error) {
-        console.error('카드 삭제 오류:', error);
+        if (userError || !user) {
+            console.error('사용자 인증 오류:', userError?.message || '로그인 필요');
+            return false;
+        }
+
+        // 본인의 카드만 삭제 가능하도록 coach_id 조건 추가
+        const { error } = await supabase
+            .from('sent_cards')
+            .delete()
+            .eq('id', cardId)
+            .eq('coach_id', user.id);
+
+        if (error) {
+            console.error('카드 삭제 오류:', error);
+            return false;
+        }
+
+        console.log('✅ 카드 삭제 성공:', cardId);
+        return true;
+    } catch (error) {
+        console.error('카드 삭제 중 예외 발생:', error);
         return false;
     }
-    return true;
 }
 
 // 팔로업 필요 고객 조회
@@ -411,6 +463,39 @@ export async function markReplyAsRead(replyId: string): Promise<boolean> {
         return false;
     }
     return true;
+}
+
+// 답장 삭제
+export async function deleteReply(replyId: string): Promise<boolean> {
+    if (!supabase) {
+        console.error('Supabase 클라이언트 없음');
+        return false;
+    }
+
+    try {
+        console.log('📝 답장 삭제 시도:', replyId);
+
+        const { error, count } = await supabase
+            .from('card_replies')
+            .delete()
+            .eq('id', replyId);
+
+        if (error) {
+            console.error('답장 삭제 오류:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            return false;
+        }
+
+        console.log('✅ 답장 삭제 성공:', replyId);
+        return true;
+    } catch (error) {
+        console.error('답장 삭제 중 예외 발생:', error);
+        return false;
+    }
 }
 
 // 코치 설정 관련

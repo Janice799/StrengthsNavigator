@@ -9,6 +9,7 @@ import {
     getDashboardStats,
     getUnreadReplies,
     markReplyAsRead,
+    deleteReply,
     getAllClients,
     createClient2,
     updateClient,
@@ -162,6 +163,8 @@ export default function DashboardPage() {
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'settings'>('overview');
     const [selectedCard, setSelectedCard] = useState<SentCard | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // 언어 Hook
     const { t, lang, mounted } = useLanguage();
@@ -226,12 +229,23 @@ export default function DashboardPage() {
 
     // 고객 삭제
     const handleDeleteClient = async (id: string) => {
-        if (confirm('정말 이 고객을 삭제하시겠습니까?')) {
-            const success = await deleteClient(id);
-            if (success) {
-                setAllClients(prev => prev.filter(c => c.id !== id));
-                setStats(prev => ({ ...prev, totalClients: prev.totalClients - 1 }));
-                alert('🗑️ 고객이 삭제되었습니다.');
+        const confirmMessage = lang === 'en'
+            ? 'Are you sure you want to delete this client?'
+            : '정말 이 고객을 삭제하시겠습니까?';
+
+        if (confirm(confirmMessage)) {
+            try {
+                const success = await deleteClient(id);
+                if (success) {
+                    setAllClients(prev => prev.filter(c => c.id !== id));
+                    setStats(prev => ({ ...prev, totalClients: prev.totalClients - 1 }));
+                    alert(lang === 'en' ? '🗑️ Client deleted.' : '🗑️ 고객이 삭제되었습니다.');
+                } else {
+                    alert(lang === 'en' ? '❌ Failed to delete client.' : '❌ 고객 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Delete client error:', error);
+                alert(lang === 'en' ? '❌ Error occurred.' : '❌ 오류가 발생했습니다.');
             }
         }
     };
@@ -311,7 +325,7 @@ export default function DashboardPage() {
             {selectedCard && (
                 <div
                     className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-                    onClick={() => setSelectedCard(null)}
+                    onClick={() => { setSelectedCard(null); setShowDeleteConfirm(false); }}
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -324,7 +338,7 @@ export default function DashboardPage() {
                                 📬 {lang === 'en' ? 'Sent Card' : '발송한 카드'}
                             </h3>
                             <button
-                                onClick={() => setSelectedCard(null)}
+                                onClick={() => { setSelectedCard(null); setShowDeleteConfirm(false); }}
                                 className="text-white/60 hover:text-white text-xl"
                             >
                                 ✕
@@ -400,36 +414,78 @@ export default function DashboardPage() {
 
                         {/* 카드 다시 보기 링크 */}
                         {selectedCard.id && !selectedCard.id.startsWith('local-') && (
-                            <div className="mt-4 flex gap-3">
-                                <a
-                                    href={`/c/${selectedCard.id}?lang=${lang}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500/20 text-gold-400 rounded-lg hover:bg-gold-500/30 transition-colors text-sm"
-                                >
-                                    🔗 {lang === 'en' ? 'Open Card Link' : '카드 링크 열기'}
-                                </a>
-                                <button
-                                    onClick={async () => {
-                                        if (confirm(lang === 'en'
-                                            ? 'Are you sure you want to delete this card? This action cannot be undone.'
-                                            : '정말 이 카드를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.')) {
-                                            const success = await deleteSentCard(selectedCard.id);
-                                            if (success) {
-                                                setRecentCards(prev => prev.filter(c => c.id !== selectedCard.id));
-                                                setSelectedCard(null);
-                                                alert(lang === 'en' ? '🗑️ Card deleted.' : '🗑️ 카드가 삭제되었습니다.');
-                                            } else {
-                                                alert(lang === 'en' ? '❌ Failed to delete card.' : '❌ 카드 삭제에 실패했습니다.');
-                                            }
-                                        }
-                                    }}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
-                                >
-                                    🗑️ {lang === 'en' ? 'Delete Card' : '카드 삭제'}
-                                </button>
-                            </div>
+                            <a
+                                href={`/c/${selectedCard.id}?lang=${lang}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gold-500/20 text-gold-400 rounded-lg hover:bg-gold-500/30 transition-colors text-sm"
+                            >
+                                🔗 {lang === 'en' ? 'Open Card Link' : '카드 링크 열기'}
+                            </a>
                         )}
+
+                        {/* 카드 삭제 버튼 - 2단계 확인 방식 */}
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                            {!showDeleteConfirm ? (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        setShowDeleteConfirm(true);
+                                    }}
+                                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors font-medium border border-red-500/30"
+                                >
+                                    🗑️ {lang === 'en' ? 'Delete This Card' : '이 카드 삭제하기'}
+                                </button>
+                            ) : (
+                                <div className="space-y-3">
+                                    <p className="text-red-400 text-sm text-center font-medium">
+                                        ⚠️ {lang === 'en' ? 'Are you sure? This cannot be undone!' : '정말 삭제하시겠습니까? 복구할 수 없습니다!'}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                setShowDeleteConfirm(false);
+                                            }}
+                                            className="flex-1 px-4 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium"
+                                        >
+                                            {lang === 'en' ? 'Cancel' : '취소'}
+                                        </button>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                setIsDeleting(true);
+                                                try {
+                                                    const success = await deleteSentCard(selectedCard.id);
+                                                    if (success) {
+                                                        setRecentCards(prev => prev.filter(c => c.id !== selectedCard.id));
+                                                        setSelectedCard(null);
+                                                        setShowDeleteConfirm(false);
+                                                        alert(lang === 'en' ? '🗑️ Card deleted.' : '🗑️ 카드가 삭제되었습니다.');
+                                                    } else {
+                                                        alert(lang === 'en' ? '❌ Failed to delete card.' : '❌ 카드 삭제에 실패했습니다.');
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Delete error:', error);
+                                                    alert(lang === 'en' ? '❌ Error occurred while deleting.' : '❌ 삭제 중 오류가 발생했습니다.');
+                                                } finally {
+                                                    setIsDeleting(false);
+                                                }
+                                            }}
+                                            disabled={isDeleting}
+                                            className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                                        >
+                                            {isDeleting
+                                                ? (lang === 'en' ? 'Deleting...' : '삭제 중...')
+                                                : (lang === 'en' ? '🗑️ Yes, Delete' : '🗑️ 삭제 확인')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </motion.div>
                 </div>
             )}
@@ -542,33 +598,103 @@ export default function DashboardPage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.35 }}
                                     >
-                                        <h2 className="text-lg font-bold text-gold-400 mb-4 flex items-center gap-2">
-                                            💌 {lang === 'en' ? 'Card Replies' : '받은 답장'}
-                                            <span className="bg-gold-500 text-ocean-900 text-xs font-bold px-2 py-1 rounded-full">
-                                                {unreadReplies.length}
-                                            </span>
-                                        </h2>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-bold text-gold-400 flex items-center gap-2">
+                                                💌 {lang === 'en' ? 'Card Replies' : '받은 답장'}
+                                                <span className="bg-gold-500 text-ocean-900 text-xs font-bold px-2 py-1 rounded-full">
+                                                    {unreadReplies.length}
+                                                </span>
+                                            </h2>
+                                            {/* 전체 다운로드 버튼 */}
+                                            <button
+                                                onClick={() => {
+                                                    const content = unreadReplies.map((reply, index) =>
+                                                        `[${index + 1}] ${reply.recipient_name}\n` +
+                                                        `📅 ${lang === 'en' ? 'Date' : '날짜'}: ${formatDateTime(reply.created_at)}\n` +
+                                                        `💬 ${lang === 'en' ? 'Message' : '메시지'}: ${reply.message}\n` +
+                                                        `---`
+                                                    ).join('\n\n');
+
+                                                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = `replies_${new Date().toISOString().split('T')[0]}.txt`;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    URL.revokeObjectURL(url);
+                                                }}
+                                                className="text-gold-400 hover:text-gold-300 text-sm px-3 py-1 bg-gold-500/10 rounded-lg"
+                                            >
+                                                📥 {lang === 'en' ? 'Download All' : '전체 다운로드'}
+                                            </button>
+                                        </div>
                                         <div className="space-y-3">
                                             {unreadReplies.map((reply) => (
                                                 <div
                                                     key={reply.id}
-                                                    className="flex items-start justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                                    className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
                                                 >
-                                                    <div className="flex-1">
-                                                        <p className="text-white font-medium">{reply.recipient_name}</p>
-                                                        <p className="text-white/70 text-sm mt-1">
-                                                            "{reply.message}"
-                                                        </p>
-                                                        <p className="text-white/40 text-xs mt-2">
-                                                            {lang === 'en' ? 'Reply date:' : '답장 날짜:'} {formatDate(reply.created_at)}
-                                                        </p>
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-white font-medium">{reply.recipient_name}</p>
+                                                                <span className="text-gold-400/60 text-xs">
+                                                                    📅 {formatDateTime(reply.created_at)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-white/70 text-sm mt-2 bg-white/5 p-3 rounded-lg whitespace-pre-wrap">
+                                                                "{reply.message}"
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleMarkAsRead(reply.id)}
-                                                        className="text-gold-400 hover:text-gold-300 text-sm ml-4"
-                                                    >
-                                                        {lang === 'en' ? 'Read ✓' : '읽음 ✓'}
-                                                    </button>
+                                                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                                                        <button
+                                                            onClick={() => handleMarkAsRead(reply.id)}
+                                                            className="text-gold-400 hover:text-gold-300 text-xs px-3 py-1.5 bg-gold-500/10 rounded-lg"
+                                                        >
+                                                            ✓ {lang === 'en' ? 'Mark as Read' : '읽음 처리'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const content =
+                                                                    `${lang === 'en' ? 'From' : '보낸 사람'}: ${reply.recipient_name}\n` +
+                                                                    `${lang === 'en' ? 'Date' : '받은 날짜'}: ${formatDateTime(reply.created_at)}\n\n` +
+                                                                    `${lang === 'en' ? 'Message' : '메시지'}:\n${reply.message}`;
+
+                                                                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                                                                const url = URL.createObjectURL(blob);
+                                                                const a = document.createElement('a');
+                                                                a.href = url;
+                                                                a.download = `reply_${reply.recipient_name}_${formatDate(reply.created_at)}.txt`;
+                                                                document.body.appendChild(a);
+                                                                a.click();
+                                                                document.body.removeChild(a);
+                                                                URL.revokeObjectURL(url);
+                                                            }}
+                                                            className="text-white/60 hover:text-white text-xs px-3 py-1.5 bg-white/10 rounded-lg"
+                                                        >
+                                                            📥 {lang === 'en' ? 'Download' : '다운로드'}
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm(lang === 'en'
+                                                                    ? 'Delete this reply?'
+                                                                    : '이 답장을 삭제하시겠습니까?')) {
+                                                                    const success = await deleteReply(reply.id);
+                                                                    if (success) {
+                                                                        setUnreadReplies(prev => prev.filter(r => r.id !== reply.id));
+                                                                    } else {
+                                                                        alert(lang === 'en' ? 'Failed to delete' : '삭제 실패');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="text-red-400 hover:text-red-300 text-xs px-3 py-1.5 bg-red-500/10 rounded-lg"
+                                                        >
+                                                            🗑️ {lang === 'en' ? 'Delete' : '삭제'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
