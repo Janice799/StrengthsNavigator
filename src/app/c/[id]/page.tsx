@@ -319,26 +319,35 @@ function ShortCardContent({ params }: { params: { id: string } }) {
         setReplySent(true);
     };
 
-    const shareToKakao = () => {
+    // 공유하기 (Web Share API)
+    const shareCard = async () => {
         if (!cardData) return;
         const recipientName = cardData.client_name;
-        // 강점 콤마로 분리된 문자열을 그대로 사용
-        const strengthsStr = cardData.strength || '';
 
-        if (typeof window !== 'undefined' && (window as any).Kakao?.Share) {
-            (window as any).Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: `${recipientName}님께 강점 카드가 도착했어요! 💌`,
-                    description: '긁어서 확인해보세요 ✨',
-                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${strengthsStr}`,
-                    link: {
-                        mobileWebUrl: window.location.href,
-                        webUrl: window.location.href,
-                    },
-                },
-            });
+        const shareData = {
+            title: lang === 'en'
+                ? `${recipientName}, you have a strength card! 💌`
+                : `${recipientName}님께 강점 카드가 도착했어요! 💌`,
+            text: lang === 'en'
+                ? 'Open to discover your strengths ✨'
+                : '열어서 확인해보세요 ✨',
+            url: window.location.href,
+        };
+
+        // Web Share API 지원 여부 확인
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                // 사용자가 공유를 취소한 경우
+                if ((err as Error).name !== 'AbortError') {
+                    console.error('공유 실패:', err);
+                    navigator.clipboard.writeText(window.location.href);
+                    alert(t.shareFallback);
+                }
+            }
         } else {
+            // Web Share API 미지원 시 링크 복사로 대체
             navigator.clipboard.writeText(window.location.href);
             alert(t.shareFallback);
         }
@@ -433,8 +442,8 @@ function ShortCardContent({ params }: { params: { id: string } }) {
                             t={t}
                         />
                         <motion.div className="flex gap-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                            <button onClick={shareToKakao} className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2">
-                                💬 {t.kakaoShare}
+                            <button onClick={shareCard} className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-colors flex items-center justify-center gap-2">
+                                📤 {lang === 'en' ? 'Share' : '공유하기'}
                             </button>
                             <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert(t.linkCopied); }} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">
                                 🔗 {t.copyLink}

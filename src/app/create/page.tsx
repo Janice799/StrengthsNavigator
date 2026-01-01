@@ -410,24 +410,33 @@ export default function CardCreatorPage() {
         alert('링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
     };
 
-    // 카카오톡 공유
-    const shareToKakao = () => {
+    // 공유하기 (Web Share API)
+    const shareCard = async () => {
         if (!cardUrl) return;
 
-        if (typeof window !== 'undefined' && (window as any).Kakao?.Share) {
-            (window as any).Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: `${recipientName}님께 강점 카드가 도착했어요! 💌`,
-                    description: '긁어서 확인해보세요 ✨',
-                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${selectedStrengths.join(',')}`,
-                    link: {
-                        mobileWebUrl: cardUrl,
-                        webUrl: cardUrl,
-                    },
-                },
-            });
+        const shareData = {
+            title: language === 'en'
+                ? `${recipientName}, you have a strength card! 💌`
+                : `${recipientName}님께 강점 카드가 도착했어요! 💌`,
+            text: language === 'en'
+                ? 'Open to discover your strengths ✨'
+                : '열어서 확인해보세요 ✨',
+            url: cardUrl,
+        };
+
+        // Web Share API 지원 여부 확인
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                // 사용자가 공유를 취소한 경우
+                if ((err as Error).name !== 'AbortError') {
+                    console.error('공유 실패:', err);
+                    copyUrl(); // fallback
+                }
+            }
         } else {
+            // Web Share API 미지원 시 링크 복사로 대체
             copyUrl();
         }
     };
@@ -820,10 +829,10 @@ export default function CardCreatorPage() {
                                     {/* 공유 버튼들 */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
-                                            onClick={shareToKakao}
-                                            className="py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2"
+                                            onClick={shareCard}
+                                            className="py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-colors flex items-center justify-center gap-2"
                                         >
-                                            {t.create.kakaoShare}
+                                            📤 {language === 'en' ? 'Share' : '공유하기'}
                                         </button>
                                         <button
                                             onClick={copyUrl}
