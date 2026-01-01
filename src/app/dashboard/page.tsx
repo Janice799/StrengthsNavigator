@@ -731,7 +731,7 @@ export default function DashboardPage() {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-right flex flex-col gap-1">
                                                         <p className="text-white/60 text-sm">
                                                             {client.last_card_sent
                                                                 ? (lang === 'en'
@@ -740,12 +740,32 @@ export default function DashboardPage() {
                                                                 : (lang === 'en' ? 'No cards sent' : '카드 발송 이력 없음')
                                                             }
                                                         </p>
-                                                        <Link
-                                                            href={`/create?client=${encodeURIComponent(client.name)}`}
-                                                            className="text-gold-400 text-sm hover:text-gold-300"
-                                                        >
-                                                            {lang === 'en' ? 'Send Card →' : '카드 보내기 →'}
-                                                        </Link>
+                                                        <div className="flex gap-2 justify-end">
+                                                            {client.last_card_sent && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        // 해당 고객에게 보낸 카드 필터링하여 모달로 표시
+                                                                        const clientCards = recentCards.filter(card =>
+                                                                            card.client_name === client.name || card.client_id === client.id
+                                                                        );
+                                                                        if (clientCards.length > 0) {
+                                                                            setSelectedCard(clientCards[0]);
+                                                                        } else {
+                                                                            alert(lang === 'en' ? 'No card history found' : '카드 내역이 없습니다');
+                                                                        }
+                                                                    }}
+                                                                    className="text-white/60 text-sm hover:text-white"
+                                                                >
+                                                                    {lang === 'en' ? '📋 History' : '📋 내역'}
+                                                                </button>
+                                                            )}
+                                                            <Link
+                                                                href={`/create?client=${encodeURIComponent(client.name)}`}
+                                                                className="text-gold-400 text-sm hover:text-gold-300"
+                                                            >
+                                                                {lang === 'en' ? 'Send Card →' : '카드 보내기 →'}
+                                                            </Link>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
