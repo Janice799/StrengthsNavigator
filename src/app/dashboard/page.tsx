@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import html2canvas from 'html2canvas';
 import {
     getRecentCards,
     getClientsNeedingFollowup,
     getDashboardStats,
-    getUnreadReplies,
+    getAllReplies,
     markReplyAsRead,
     deleteReply,
     getAllClients,
@@ -155,7 +156,7 @@ function formatDateTime(dateStr: string): string {
 export default function DashboardPage() {
     const [recentCards, setRecentCards] = useState<SentCard[]>([]);
     const [followupClients, setFollowupClients] = useState<ClientLastContact[]>([]);
-    const [unreadReplies, setUnreadReplies] = useState<CardReply[]>([]);
+    const [allReplies, setAllReplies] = useState<CardReply[]>([]);
     const [allClients, setAllClients] = useState<Client[]>([]);
     const [stats, setStats] = useState({ totalClients: 0, totalCardsSent: 0, clientsNeedingFollowup: 0 });
     const [loading, setLoading] = useState(true);
@@ -181,13 +182,13 @@ export default function DashboardPage() {
                     getRecentCards(10),
                     getClientsNeedingFollowup(),
                     getDashboardStats(),
-                    getUnreadReplies(),
+                    getAllReplies(),
                     getAllClients()
                 ]);
                 setRecentCards(cards);
                 setFollowupClients(followups);
                 setStats(dashStats);
-                setUnreadReplies(replies);
+                setAllReplies(replies);
                 setAllClients(clients);
             } catch (error) {
                 console.error('대시보드 데이터 로드 오류:', error);
@@ -201,7 +202,7 @@ export default function DashboardPage() {
     // 답장 읽음 처리
     const handleMarkAsRead = async (replyId: string) => {
         await markReplyAsRead(replyId);
-        setUnreadReplies(prev => prev.filter(r => r.id !== replyId));
+        setAllReplies(prev => prev.map(r => r.id === replyId ? { ...r, is_read: true } : r));
     };
 
     // 고객 저장 (추가/수정)
@@ -597,7 +598,7 @@ export default function DashboardPage() {
                                 </div>
 
                                 {/* 새 답장 알림 */}
-                                {unreadReplies.length > 0 && (
+                                {allReplies.length > 0 && (
                                     <motion.div
                                         className="glass rounded-2xl p-6 border border-gold-400/30"
                                         initial={{ opacity: 0, y: 20 }}
@@ -608,13 +609,13 @@ export default function DashboardPage() {
                                             <h2 className="text-lg font-bold text-gold-400 flex items-center gap-2">
                                                 💌 {lang === 'en' ? 'Card Replies' : '받은 답장'}
                                                 <span className="bg-gold-500 text-ocean-900 text-xs font-bold px-2 py-1 rounded-full">
-                                                    {unreadReplies.length}
+                                                    {allReplies.filter(r => !r.is_read).length}/{allReplies.length}
                                                 </span>
                                             </h2>
                                             {/* 전체 다운로드 버튼 */}
                                             <button
                                                 onClick={() => {
-                                                    const content = unreadReplies.map((reply, index) =>
+                                                    const content = allReplies.map((reply: CardReply, index: number) =>
                                                         `[${index + 1}] ${reply.recipient_name}\n` +
                                                         `📅 ${lang === 'en' ? 'Date' : '날짜'}: ${formatDateTime(reply.created_at)}\n` +
                                                         `💬 ${lang === 'en' ? 'Message' : '메시지'}: ${reply.message}\n` +
@@ -637,10 +638,11 @@ export default function DashboardPage() {
                                             </button>
                                         </div>
                                         <div className="space-y-3">
-                                            {unreadReplies.map((reply) => (
+                                            {allReplies.map((reply: CardReply) => (
                                                 <div
                                                     key={reply.id}
-                                                    className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                                    id={`reply-${reply.id}`}
+                                                    className={`p-4 rounded-xl transition-colors ${reply.is_read ? 'bg-white/3 opacity-70' : 'bg-white/5 hover:bg-white/10 border-l-4 border-gold-400'}`}
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
@@ -656,11 +658,36 @@ export default function DashboardPage() {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                                                        {!reply.is_read && (
+                                                            <button
+                                                                onClick={() => handleMarkAsRead(reply.id)}
+                                                                className="text-gold-400 hover:text-gold-300 text-xs px-3 py-1.5 bg-gold-500/10 rounded-lg"
+                                                            >
+                                                                ✓ {lang === 'en' ? 'Mark as Read' : '읽음 처리'}
+                                                            </button>
+                                                        )}
+                                                        {reply.is_read && (
+                                                            <span className="text-white/40 text-xs px-3 py-1.5">
+                                                                ✓ {lang === 'en' ? 'Read' : '읽음'}
+                                                            </span>
+                                                        )}
                                                         <button
-                                                            onClick={() => handleMarkAsRead(reply.id)}
-                                                            className="text-gold-400 hover:text-gold-300 text-xs px-3 py-1.5 bg-gold-500/10 rounded-lg"
+                                                            onClick={async () => {
+                                                                const element = document.getElementById(`reply-${reply.id}`);
+                                                                if (element) {
+                                                                    const canvas = await html2canvas(element, {
+                                                                        backgroundColor: '#0f172a',
+                                                                        scale: 2,
+                                                                    });
+                                                                    const link = document.createElement('a');
+                                                                    link.download = `reply_${reply.recipient_name}_${formatDate(reply.created_at)}.png`;
+                                                                    link.href = canvas.toDataURL('image/png');
+                                                                    link.click();
+                                                                }
+                                                            }}
+                                                            className="text-blue-400 hover:text-blue-300 text-xs px-3 py-1.5 bg-blue-500/10 rounded-lg"
                                                         >
-                                                            ✓ {lang === 'en' ? 'Mark as Read' : '읽음 처리'}
+                                                            📷 {lang === 'en' ? 'Save as Image' : '이미지로 저장'}
                                                         </button>
                                                         <button
                                                             onClick={() => {
@@ -690,7 +717,7 @@ export default function DashboardPage() {
                                                                     : '이 답장을 삭제하시겠습니까?')) {
                                                                     const success = await deleteReply(reply.id);
                                                                     if (success) {
-                                                                        setUnreadReplies(prev => prev.filter(r => r.id !== reply.id));
+                                                                        setAllReplies(prev => prev.filter(r => r.id !== reply.id));
                                                                     } else {
                                                                         alert(lang === 'en' ? 'Failed to delete' : '삭제 실패');
                                                                     }
