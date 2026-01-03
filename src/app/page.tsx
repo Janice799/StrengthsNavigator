@@ -194,11 +194,11 @@ export default function LandingPage() {
                                 <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <Link href="/login" className="px-5 py-2 text-white/70 hover:text-white text-sm transition-colors">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Link href="/login" className="px-3 sm:px-5 py-2 text-white/70 hover:text-white text-xs sm:text-sm transition-colors whitespace-nowrap">
                                     {t.login.loginButton}
                                 </Link>
-                                <Link href="/signup" className="px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-sm transition-colors border border-gold-500/30">
+                                <Link href="/signup" className="px-3 sm:px-5 py-2 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg text-xs sm:text-sm transition-colors border border-gold-500/30 whitespace-nowrap">
                                     {t.signup.signUpButton}
                                 </Link>
                             </div>

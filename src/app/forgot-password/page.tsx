@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
                     {/* 로고 */}
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-elegant font-bold text-gold-gradient mb-2">
-                            Selli Club
+                            StrengthsNavigator
                         </h1>
                         <p className="text-white/60">비밀번호 찾기</p>
                     </div>

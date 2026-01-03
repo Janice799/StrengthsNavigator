@@ -131,7 +131,7 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
                     onClick={onReply}
                     className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-all"
                 >
-                    💌 코치에게 답장하기
+                    💌 Reply to Coach
                 </button>
             </div>
 
@@ -193,7 +193,7 @@ function ReplyForm({
             onSuccess();
         } catch (error) {
             console.error('답장 전송 오류:', error);
-            alert('답장 전송 중 오류가 발생했습니다.');
+            alert('An error occurred while sending your reply.');
         } finally {
             setIsSending(false);
         }
@@ -215,7 +215,7 @@ function ReplyForm({
                 onClick={(e) => e.stopPropagation()}
             >
                 <h3 className="text-xl font-bold text-white mb-4">
-                    💌 {coachProfile.name} 코치에게 답장
+                    💌 Reply to Coach
                 </h3>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -279,7 +279,7 @@ function CardContent({
         <div className="premium-card card-corner rounded-2xl p-3 sm:p-4 w-full h-full flex flex-col bg-gradient-to-br from-ocean-800 to-ocean-900">
             {/* 상단: 로고 + 수신자 (컴팩트하게 한줄로) */}
             <div className="text-center mb-1">
-                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">Selli Club</p>
+                <p className="text-gold-400 text-xs sm:text-sm font-semibold tracking-wide mb-1">StrengthsNavigator</p>
                 <h2 className="text-gold-400 font-signature text-lg sm:text-xl">
                     {i18n[lang].to} {recipientName || (lang === 'ko' ? '받는 분' : 'Dear Friend')}
                 </h2>
@@ -449,7 +449,7 @@ function CardViewContent() {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <h1 className="text-xl font-elegant font-semibold text-gold-gradient">
-                        Selli Club
+                        StrengthsNavigator
                     </h1>
                     <p className="text-white/40 text-sm mt-1">{t.cardArrived}</p>
                 </motion.div>

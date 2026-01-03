@@ -202,7 +202,7 @@ function CardPreview({
 
             {/* 코치 서명 - 골드 컬러 font-signature */}
             <div className="text-center">
-                <p className="text-gold-400 font-signature text-lg">From. {coachName || '코치'}</p>
+                <p className="text-gold-400 font-signature text-lg">From. {coachName || (language === 'en' ? 'Coach' : '코치')}</p>
             </div>
         </motion.div>
     );
