@@ -377,24 +377,29 @@ function CardViewContent() {
         setReplySent(true);
     };
 
-    // 카카오톡 공유
-    const shareToKakao = () => {
-        if (typeof window !== 'undefined' && (window as any).Kakao?.Share) {
-            (window as any).Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: `${recipientName}님께 강점 카드가 도착했어요! 💌`,
-                    description: '긁어서 확인해보세요 ✨',
-                    imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipientName)}&strengths=${strengths.join(',')}`,
-                    link: {
-                        mobileWebUrl: window.location.href,
-                        webUrl: window.location.href,
-                    },
-                },
-            });
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert('링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+    // 공유하기 (Web Share API)
+    const shareCard = async () => {
+        const shareUrl = window.location.href;
+        const shareData = {
+            title: lang === 'en'
+                ? `${recipientName}, you have a strength card! 💌`
+                : `${recipientName}님께 강점 카드가 도착했어요! 💌`,
+            text: lang === 'en' ? 'Open to discover your strengths ✨' : '긁어서 확인해보세요 ✨',
+            url: shareUrl,
+        };
+
+        try {
+            if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback: 링크 복사
+                await navigator.clipboard.writeText(shareUrl);
+                alert(lang === 'en'
+                    ? 'Link copied! Paste it in your messenger.'
+                    : '링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+            }
+        } catch (err) {
+            console.error('Share failed:', err);
         }
     };
 
@@ -501,10 +506,10 @@ function CardViewContent() {
                             transition={{ delay: 0.5 }}
                         >
                             <button
-                                onClick={shareToKakao}
-                                className="flex-1 py-3 bg-[#FEE500] text-black font-bold rounded-xl hover:bg-[#FAE100] transition-colors flex items-center justify-center gap-2"
+                                onClick={shareCard}
+                                className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-colors flex items-center justify-center gap-2"
                             >
-                                💬 {t.kakaoShare}
+                                📤 {lang === 'en' ? 'Share' : '공유하기'}
                             </button>
                             <button
                                 onClick={() => {

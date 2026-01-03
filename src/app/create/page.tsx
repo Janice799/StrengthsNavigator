@@ -379,20 +379,15 @@ export default function CardCreatorPage() {
                 // DB 저장 성공 시 짧은 링크 생성
                 const url = `${baseUrl}/c/${savedCard.id}?lang=${language}`;
                 setCardUrl(url);
+                console.log('✅ 카드 저장 성공:', savedCard.id);
             } else {
-                // 저장 실패 시 알림 및 긴 링크 Fallback
-                console.warn('⚠️ DB 저장 실패, 긴 링크로 대체됨');
-
-                const params = new URLSearchParams({
-                    name: recipientName,
-                    strengths: selectedStrengths.join(','),
-                    situation: situationText,
-                    message: coachMessage,
-                    season: selectedSeason || '',
-                    lang: language,
-                });
-                const url = `${baseUrl}/card?${params.toString()}`;
-                setCardUrl(url);
+                // 저장 실패 시 알림 - 긴 URL 대신 에러 메시지 표시
+                console.error('⚠️ DB 저장 실패');
+                alert(language === 'en'
+                    ? '⚠️ Card save failed. Please make sure you are logged in and try again.'
+                    : '⚠️ 카드 저장에 실패했습니다. 로그인 상태를 확인하고 다시 시도해주세요.');
+                setIsSaving(false);
+                return;
             }
 
             setSaveSuccess(true);
