@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import SeasonalEffect from '@/components/effects/SeasonalEffect';
 import seasonalTemplates from '@/config/seasonal_templates.json';
 import strengthDescriptions from '@/config/strength_descriptions.json';
@@ -256,6 +257,15 @@ export default function CardCreatorPage() {
         }
         loadProfile();
     }, []);
+
+    // URL 쿼리에서 client 파라미터로 고객 이름 자동 채움
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        const clientName = searchParams.get('client');
+        if (clientName && !recipientName) {
+            setRecipientName(clientName);
+        }
+    }, [searchParams, recipientName]);
 
     // 고객 검색 (debounced)
     const searchClientsDebounced = useCallback(async (query: string) => {
