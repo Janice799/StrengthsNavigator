@@ -492,26 +492,32 @@ export default function DashboardPage() {
             <div className="relative z-10 min-h-screen py-8 px-4">
                 {/* 헤더 */}
                 <div className="max-w-6xl mx-auto mb-8">
-                    <div className="flex items-center justify-between">
-                        <Link href="/" className="text-white/60 hover:text-gold-400 transition-colors">
+                    {/* 모바일: 세로 레이아웃, 데스크톱: 가로 레이아웃 */}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        {/* 왼쪽: 홈 버튼 */}
+                        <Link href="/" className="text-white/60 hover:text-gold-400 transition-colors text-sm">
                             {lang === 'en' ? '← Home' : '← 홈으로'}
                         </Link>
+
+                        {/* 중앙: 타이틀 */}
                         <div className="text-center">
-                            <h1 className="text-2xl font-elegant font-bold text-gold-gradient">
+                            <h1 className="text-xl md:text-2xl font-elegant font-bold text-gold-gradient">
                                 {lang === 'en' ? 'Dashboard' : '대시보드'}
                             </h1>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-white/60 text-xs md:text-sm mt-1">
                                 {lang === 'en' ? 'Client Management & Card History' : '고객 관리 & 카드 발송 현황'}
                             </p>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white" />
-                            <Link href="/create" className="text-gold-400 hover:text-gold-300 transition-colors">
+
+                        {/* 오른쪽: 버튼들 - 모바일에서 수평 스크롤 가능 */}
+                        <div className="flex items-center justify-center md:justify-end gap-2 md:gap-4 flex-wrap">
+                            <LanguageToggle className="bg-white/10 hover:bg-white/20 text-white text-sm" />
+                            <Link href="/create" className="text-gold-400 hover:text-gold-300 transition-colors text-sm whitespace-nowrap">
                                 {t.dashboard.createCard}
                             </Link>
                             <button
                                 onClick={handleLogout}
-                                className="text-white/40 hover:text-red-400 transition-colors text-sm"
+                                className="text-white/40 hover:text-red-400 transition-colors text-sm whitespace-nowrap"
                             >
                                 {t.dashboard.logout}
                             </button>
@@ -719,13 +725,13 @@ export default function DashboardPage() {
                                             {followupClients.map((client) => (
                                                 <div
                                                     key={client.id}
-                                                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors gap-3"
                                                 >
-                                                    <div>
-                                                        <p className="text-white font-medium">{client.name}</p>
-                                                        <div className="flex gap-2 mt-1">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white font-medium truncate">{client.name}</p>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
                                                             {[client.strength_1, client.strength_2, client.strength_3].filter(Boolean).map((s, i) => (
-                                                                <span key={i} className="text-xs text-gold-400/70">
+                                                                <span key={i} className="text-xs text-gold-400/70 whitespace-nowrap">
                                                                     {STRENGTHS[s || '']?.emoji} {STRENGTHS[s || '']?.name}
                                                                 </span>
                                                             ))}

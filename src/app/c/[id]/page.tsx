@@ -319,10 +319,35 @@ function ShortCardContent({ params }: { params: { id: string } }) {
         setReplySent(true);
     };
 
+    // URL 복사 함수 (HTTP 환경 fallback 포함)
+    const copyToClipboard = async (url: string) => {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+                alert(t.linkCopied);
+            } else {
+                // HTTP 환경 fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert(t.linkCopied);
+            }
+        } catch (err) {
+            console.error('복사 실패:', err);
+            prompt(lang === 'en' ? 'Copy this link:' : '이 링크를 복사하세요:', url);
+        }
+    };
+
     // 공유하기 (Web Share API)
     const shareCard = async () => {
         if (!cardData) return;
         const recipientName = cardData.client_name;
+        const currentUrl = window.location.href;
 
         const shareData = {
             title: lang === 'en'
@@ -331,25 +356,23 @@ function ShortCardContent({ params }: { params: { id: string } }) {
             text: lang === 'en'
                 ? 'Open to discover your strengths ✨'
                 : '열어서 확인해보세요 ✨',
-            url: window.location.href,
+            url: currentUrl,
         };
 
-        // Web Share API 지원 여부 확인
-        if (navigator.share) {
+        // Web Share API 지원 여부 확인 (HTTPS에서만 작동)
+        if (navigator.share && window.isSecureContext) {
             try {
                 await navigator.share(shareData);
             } catch (err) {
                 // 사용자가 공유를 취소한 경우
                 if ((err as Error).name !== 'AbortError') {
                     console.error('공유 실패:', err);
-                    navigator.clipboard.writeText(window.location.href);
-                    alert(t.shareFallback);
+                    await copyToClipboard(currentUrl);
                 }
             }
         } else {
-            // Web Share API 미지원 시 링크 복사로 대체
-            navigator.clipboard.writeText(window.location.href);
-            alert(t.shareFallback);
+            // Web Share API 미지원 또는 HTTP 환경 시 링크 복사로 대체
+            await copyToClipboard(currentUrl);
         }
     };
 
@@ -445,7 +468,7 @@ function ShortCardContent({ params }: { params: { id: string } }) {
                             <button onClick={shareCard} className="flex-1 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-ocean-900 font-bold rounded-xl hover:from-gold-400 hover:to-gold-500 transition-colors flex items-center justify-center gap-2">
                                 📤 {lang === 'en' ? 'Share' : '공유하기'}
                             </button>
-                            <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert(t.linkCopied); }} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">
+                            <button onClick={() => copyToClipboard(window.location.href)} className="flex-1 py-3 glass text-white rounded-xl hover:bg-white/10 transition-colors">
                                 🔗 {t.copyLink}
                             </button>
                         </motion.div>

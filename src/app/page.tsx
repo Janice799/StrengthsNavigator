@@ -258,9 +258,9 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    {/* 하단 */}
+                    {/* 하단 - pointer-events-none으로 버튼 클릭 방해 방지 */}
                     <motion.footer
-                        className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12"
+                        className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12 pointer-events-none"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1 }}
@@ -444,9 +444,9 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                {/* 하단 */}
+                {/* 하단 - pointer-events-none으로 버튼 클릭 방해 방지 */}
                 <motion.footer
-                    className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12"
+                    className="fixed bottom-0 left-0 right-0 text-center pb-6 bg-gradient-to-t from-ocean-900/90 to-transparent pt-12 pointer-events-none"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}

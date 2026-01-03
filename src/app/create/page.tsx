@@ -9,7 +9,7 @@ import strengthDescriptions from '@/config/strength_descriptions.json';
 import strengthsI18n from '@/config/strengths_i18n.json';
 import i18n from '@/config/i18n.json';
 import { searchClients, saveSentCard, Client, getPublicCoachProfile } from '@/lib/supabase';
-import { LanguageToggle } from '@/hooks/useLanguage';
+import { LanguageToggle, useLanguage } from '@/hooks/useLanguage';
 
 // 34가지 강점 테마
 const STRENGTHS = [
@@ -214,7 +214,7 @@ export default function CardCreatorPage() {
     const [selectedStrengths, setSelectedStrengths] = useState<string[]>([]);
     const [situationText, setSituationText] = useState('');
     const [coachMessage, setCoachMessage] = useState('');
-    const [language, setLanguage] = useState<'ko' | 'en'>('ko');
+    const { lang: language, setLang } = useLanguage();
 
     // i18n 텍스트
     const t = (i18n as any)[language];
@@ -403,11 +403,39 @@ export default function CardCreatorPage() {
         }
     };
 
-    // URL 복사
+    // URL 복사 (HTTP 환경 fallback 포함)
     const copyUrl = async () => {
         if (!cardUrl) return;
-        await navigator.clipboard.writeText(cardUrl);
-        alert('링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+
+        try {
+            // 보안 컨텍스트(HTTPS)에서만 Clipboard API 사용 가능
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(cardUrl);
+                alert(language === 'en'
+                    ? 'Link copied! Paste it in your messenger.'
+                    : '링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+            } else {
+                // HTTP 환경 fallback: 임시 textarea 사용
+                const textArea = document.createElement('textarea');
+                textArea.value = cardUrl;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert(language === 'en'
+                    ? 'Link copied! Paste it in your messenger.'
+                    : '링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+            }
+        } catch (err) {
+            console.error('복사 실패:', err);
+            // 복사 실패 시 링크를 prompt로 표시
+            prompt(
+                language === 'en' ? 'Copy this link:' : '이 링크를 복사하세요:',
+                cardUrl
+            );
+        }
     };
 
     // 공유하기 (Web Share API)
@@ -424,20 +452,20 @@ export default function CardCreatorPage() {
             url: cardUrl,
         };
 
-        // Web Share API 지원 여부 확인
-        if (navigator.share) {
+        // Web Share API 지원 여부 확인 (HTTPS에서만 작동)
+        if (navigator.share && window.isSecureContext) {
             try {
                 await navigator.share(shareData);
             } catch (err) {
                 // 사용자가 공유를 취소한 경우
                 if ((err as Error).name !== 'AbortError') {
                     console.error('공유 실패:', err);
-                    copyUrl(); // fallback
+                    await copyUrl(); // fallback
                 }
             }
         } else {
-            // Web Share API 미지원 시 링크 복사로 대체
-            copyUrl();
+            // Web Share API 미지원 또는 HTTP 환경 시 링크 복사로 대체
+            await copyUrl();
         }
     };
 
@@ -557,7 +585,7 @@ export default function CardCreatorPage() {
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setLanguage('ko')}
+                                        onClick={() => setLang('ko')}
                                         className={`flex-1 py-3 rounded-xl font-medium transition-all ${language === 'ko'
                                             ? 'bg-gold-500 text-ocean-900'
                                             : 'bg-white/10 text-white/70 hover:bg-white/20'
@@ -567,7 +595,7 @@ export default function CardCreatorPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setLanguage('en')}
+                                        onClick={() => setLang('en')}
                                         className={`flex-1 py-3 rounded-xl font-medium transition-all ${language === 'en'
                                             ? 'bg-gold-500 text-ocean-900'
                                             : 'bg-white/10 text-white/70 hover:bg-white/20'
