@@ -103,21 +103,25 @@ function CoachProfile({ onReply }: { onReply: () => void }) {
             transition={{ delay: 0.3 }}
             className="glass rounded-2xl p-6 max-w-md mx-auto"
         >
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-col items-center mb-4">
                 {/* 코치 사진 */}
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-400/50 flex-shrink-0">
-                    <img
-                        src={coachProfile.photo}
-                        alt={coachProfile.name}
-                        className="w-full h-full object-cover"
-                    />
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-400/50 mb-3 bg-white/10 flex items-center justify-center">
+                    {coachProfile.photo ? (
+                        <img
+                            src={coachProfile.photo}
+                            alt={coachProfile.name}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <svg className="w-10 h-10 text-gold-400/60" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        </svg>
+                    )}
                 </div>
 
                 {/* 코치 정보 */}
-                <div className="flex-1">
-                    <h3 className="text-white font-bold text-lg">{coachProfile.name}</h3>
-                    <p className="text-gold-400 text-sm">{coachProfile.title}</p>
-                </div>
+                <h3 className="text-white font-bold text-lg text-center">{coachProfile.name || 'Coach'}</h3>
+                <p className="text-gold-400 text-sm text-center">{coachProfile.title}</p>
             </div>
 
             {/* 코치 소개 */}
