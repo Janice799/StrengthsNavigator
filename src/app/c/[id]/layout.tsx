@@ -5,6 +5,8 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const ogImageUrl = `https://strengths-navigator.vercel.app/api/og?name=${encodeURIComponent('소중한 분')}&strength=achiever`;
+
     return {
         title: 'StrengthsNavigator | 강점 카드',
         description: '강점 코치의 마음을 전하는 카드가 도착했어요!',
@@ -16,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             url: `https://strengths-navigator.vercel.app/c/${params.id}`,
             images: [
                 {
-                    url: `https://strengths-navigator.vercel.app/api/og?id=${params.id}`,
+                    url: ogImageUrl,
                     width: 1200,
                     height: 630,
                     alt: 'StrengthsNavigator Card',
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title: 'StrengthsNavigator | 강점 카드',
             description: '당신을 위한 강점 카드가 도착했어요!',
-            images: [`https://strengths-navigator.vercel.app/api/og?id=${params.id}`],
+            images: [ogImageUrl],
         },
     };
 }
