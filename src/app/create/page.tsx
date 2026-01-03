@@ -232,6 +232,9 @@ export default function CardCreatorPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
+    // 토스트 메시지 상태
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
     // 코치 프로필 상태
     const [coachProfile, setCoachProfile] = useState({
         brand_name: 'StrengthsNavigator',
@@ -407,13 +410,18 @@ export default function CardCreatorPage() {
     const copyUrl = async () => {
         if (!cardUrl) return;
 
+        const showToast = (msg: string) => {
+            setToastMessage(msg);
+            setTimeout(() => setToastMessage(null), 3000);
+        };
+
         try {
             // 보안 컨텍스트(HTTPS)에서만 Clipboard API 사용 가능
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(cardUrl);
-                alert(language === 'en'
-                    ? 'Link copied! Paste it in your messenger.'
-                    : '링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+                showToast(language === 'en'
+                    ? '✅ Link copied! Paste it in your messenger.'
+                    : '✅ 링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
             } else {
                 // HTTP 환경 fallback: 임시 textarea 사용
                 const textArea = document.createElement('textarea');
@@ -424,9 +432,9 @@ export default function CardCreatorPage() {
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                alert(language === 'en'
-                    ? 'Link copied! Paste it in your messenger.'
-                    : '링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
+                showToast(language === 'en'
+                    ? '✅ Link copied! Paste it in your messenger.'
+                    : '✅ 링크가 복사되었습니다! 카카오톡에 붙여넣기 하세요.');
             }
         } catch (err) {
             console.error('복사 실패:', err);
@@ -472,6 +480,64 @@ export default function CardCreatorPage() {
     // 추천 인사말 가져오기
     const getTemplates = (): string[] => {
         if (!selectedSeason || !selectedSituation) return [];
+
+        // 영어 모드일 때 기본 영어 메시지 반환
+        if (language === 'en') {
+            const englishTemplates: Record<string, Record<string, string[]>> = {
+                spring: {
+                    new_year: ["Wishing you a fresh start like the blooming spring!", "May your new beginning be as beautiful as spring flowers!", "Hope this spring brings you endless possibilities!", "Like cherry blossoms, may your new journey be magnificent!", "A new chapter begins - embrace it with spring's energy!"],
+                    birthday: ["Happy Birthday! May your day bloom like spring flowers!", "Wishing you a birthday as warm as spring sunshine!", "Celebrate like the first flowers of spring!", "May your new year be as refreshing as spring breeze!", "Happy Birthday! Bloom and shine!"],
+                    christmas: ["Merry Christmas! Warm as spring memories!", "Wishing you holiday joy as beautiful as spring!", "May your Christmas be filled with spring-like warmth!", "Season's greetings with spring-fresh blessings!", "A Christmas as lovely as a spring garden!"],
+                    encouragement: ["Like spring follows winter, better days are coming!", "You'll bloom beautifully, just like spring flowers!", "Keep going - your spring is just around the corner!", "New growth awaits you, just like springtime!", "Believe in yourself - spring always arrives!"],
+                    comfort: ["After every winter comes spring - hold on!", "Like spring rain brings growth, this too shall pass!", "You'll bloom again, just wait for your spring!", "Warmth is coming - spring is near!", "Nature renews, and so will you!"],
+                    promotion: ["Congratulations! Your hard work has blossomed!", "Like flowers in spring, your career is blooming!", "Well deserved success - celebrate this spring moment!", "Your dedication has paid off - congratulations!", "Rising like spring sunshine - so proud of you!"],
+                    graduation: ["Congratulations! Time to bloom in the real world!", "Like spring's first flowers, you're ready to shine!", "Graduation marks a new spring in your life!", "Your future is as bright as spring sunshine!", "Celebrate this new beginning - you've earned it!"],
+                    wedding: ["Wishing you a love as beautiful as spring!", "May your marriage bloom like spring flowers!", "Congratulations on your spring of love!", "A new season of love begins - best wishes!", "May your love story be eternally spring!"],
+                    vacation: ["Enjoy your spring getaway!", "May your vacation blossom with joy!", "Relax and bloom - you deserve it!", "Spring adventures await - have fun!", "Wishing you a refreshing spring break!"],
+                    gratitude: ["Thank you for being a ray of spring sunshine!", "Your kindness blooms like spring flowers - grateful!", "Appreciation as warm as spring!", "Thank you for being so wonderful!", "Your help means the world to me!"]
+                },
+                summer: {
+                    new_year: ["Start the year with summer's energy!", "May your new year shine like summer sun!", "Wishing you a bright and vibrant year ahead!", "Embrace new beginnings with summer warmth!", "Your year will be as brilliant as summer!"],
+                    birthday: ["Happy Birthday! Shine like the summer sun!", "Wishing you a birthday as warm as summer!", "Celebrate with summer vibes - Happy Birthday!", "May your year be as bright as summer days!", "Have a sunny, spectacular birthday!"],
+                    christmas: ["Merry Christmas with summer warmth in our hearts!", "Wishing you a bright holiday season!", "May your Christmas be as warm as summer memories!", "Holiday blessings - warm as summer sunshine!", "A radiant Christmas to you!"],
+                    encouragement: ["Shine bright like the summer sun!", "You've got this - summer energy is yours!", "Stay strong - sunny days are ahead!", "Like summer, your spirit is unbreakable!", "Keep shining - you're doing great!"],
+                    comfort: ["After every storm comes summer sunshine!", "Warmth is coming - hang in there!", "Like summer follows rain, joy follows pain!", "Brighter days are just ahead!", "You'll shine again - believe it!"],
+                    promotion: ["Congratulations! You're on fire!", "Success looks great on you - well done!", "Rising like the summer sun - congrats!", "Your hard work is paying off brilliantly!", "Celebrate this sunny achievement!"],
+                    graduation: ["Congratulations, graduate! Shine on!", "Your future is as bright as summer!", "You did it! Time to shine!", "Adventure awaits - go get it!", "Proud of your sunny achievement!"],
+                    wedding: ["Wishing you eternal summer love!", "May your love shine bright always!", "Congratulations on your beautiful union!", "A love as warm as summer - best wishes!", "May your days together be sunny!"],
+                    vacation: ["Have the best summer vacation ever!", "Enjoy every sunny moment!", "Relax, recharge, and have fun!", "Summer vibes only - enjoy!", "Make amazing summer memories!"],
+                    gratitude: ["Thank you for brightening my day!", "Your warmth is appreciated!", "Grateful for your sunny spirit!", "Thank you so much!", "You're a ray of sunshine - thanks!"]
+                },
+                autumn: {
+                    new_year: ["May your new year be rich like autumn harvest!", "Wishing you abundance in the coming year!", "A golden new beginning awaits you!", "May success fall like autumn leaves!", "Harvest the joy of new possibilities!"],
+                    birthday: ["Happy Birthday! May you reap all the blessings!", "Wishing you a golden birthday!", "Celebrate your harvest of wonderful years!", "May your day be as rich as autumn!", "A beautiful birthday to you!"],
+                    christmas: ["Merry Christmas with autumn's warmth!", "Wishing you a cozy holiday season!", "May your Christmas be rich with joy!", "Holiday blessings, golden and warm!", "A wonderful Christmas to you!"],
+                    encouragement: ["Your hard work will bear fruit - keep going!", "Success is ripening - stay patient!", "Like autumn harvest, rewards are coming!", "Golden opportunities await you!", "Keep planting seeds of effort!"],
+                    comfort: ["After leaves fall, spring comes again!", "This season of difficulty will pass!", "Peace is coming - hold on!", "Like nature, you'll renew!", "Better times are ahead!"],
+                    promotion: ["Congratulations on your harvest of success!", "You've earned this golden moment!", "Your efforts have ripened beautifully!", "Well-deserved promotion - congrats!", "Reap the rewards of your hard work!"],
+                    graduation: ["Congratulations! Time to harvest your dreams!", "You've cultivated success - well done!", "Golden futures await you!", "Celebrate your abundant achievement!", "Your hard work has paid off!"],
+                    wedding: ["May your love be rich and golden!", "Wishing you a bountiful life together!", "Congratulations on your beautiful harvest of love!", "May your marriage be ever fruitful!", "Golden blessings on your union!"],
+                    vacation: ["Enjoy the beautiful autumn scenery!", "Have a golden getaway!", "Relax among the fall colors!", "Autumn adventures await!", "Enjoy this cozy vacation!"],
+                    gratitude: ["Thank you - your kindness is golden!", "Grateful for your generous spirit!", "Your help means everything!", "Thank you so much!", "Appreciation beyond words!"]
+                },
+                winter: {
+                    new_year: ["May the new year be pure like fresh snow!", "Wishing you a cozy and blessed year!", "Start fresh like the first snowfall!", "May warmth fill your new year!", "A beautiful new beginning awaits!"],
+                    birthday: ["Happy Birthday! May your day be magical!", "Wishing you birthday warmth this winter!", "Celebrate like the first snowfall - uniquely!", "May your year ahead be wonderful!", "A cozy birthday to you!"],
+                    christmas: ["Merry Christmas! May it be magical!", "Wishing you a wonderful holiday season!", "May your Christmas be filled with joy!", "Warm wishes for a beautiful Christmas!", "Let it snow, let it glow - Merry Christmas!"],
+                    encouragement: ["After winter comes spring - hold on!", "You'll shine through like winter stars!", "Warmth is coming - stay strong!", "Like snow melts to reveal life, good things await!", "Believe in brighter days!"],
+                    comfort: ["Spring always follows winter!", "This cold season will pass!", "Warmth is on its way!", "You'll emerge stronger!", "Better days are coming!"],
+                    promotion: ["Congratulations! You shine like a winter star!", "Hard work through the cold has paid off!", "You're rising like winter sunshine!", "Well-deserved success - congrats!", "Brilliant achievement - proud of you!"],
+                    graduation: ["Congratulations! Spring awaits you!", "You made it through - well done!", "A bright future is ahead!", "Your perseverance paid off!", "Celebrate this milestone!"],
+                    wedding: ["Wishing you eternal warmth in love!", "May your love be cozy forever!", "Congratulations on your beautiful union!", "Pure love like fresh snow!", "Best wishes for your journey together!"],
+                    vacation: ["Have a magical winter getaway!", "Enjoy the cozy vacation!", "Make wonderful winter memories!", "Relax and stay warm!", "Enjoy this beautiful season!"],
+                    gratitude: ["Thank you for your warm heart!", "Your kindness melts the cold - grateful!", "Thank you so much!", "Warm appreciation for everything!", "You're a blessing - thanks!"]
+                }
+            };
+
+            const seasonData = englishTemplates[selectedSeason];
+            if (!seasonData) return [];
+            return seasonData[selectedSituation] || ["Wishing you all the best!", "May this special moment bring you joy!", "Thinking of you with warm wishes!", "You are truly special!", "Best wishes to you!"];
+        }
 
         const seasonData = seasonalTemplates.seasons[selectedSeason];
         if (!seasonData) return [];
@@ -756,15 +822,16 @@ export default function CardCreatorPage() {
 
                             {/* 코치의 한마디 (Textarea) + 추천 인사말 */}
                             <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="text-white/80 font-medium">
+                                {/* 모바일에서는 세로로, 데스크톱에서는 가로로 정렬 */}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                                    <label className="text-white/80 font-medium whitespace-nowrap">
                                         {t.create.coachMessage}
                                     </label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap justify-end">
                                         <motion.button
                                             type="button"
                                             onClick={generateStrengthLetter}
-                                            className="text-gold-400 text-sm hover:text-gold-300 transition-colors bg-gold-500/10 px-3 py-1 rounded-lg"
+                                            className="text-gold-400 text-xs sm:text-sm hover:text-gold-300 transition-colors bg-gold-500/10 px-2 sm:px-3 py-1 rounded-lg whitespace-nowrap"
                                             whileHover={{ scale: 1.05 }}
                                             disabled={selectedStrengths.length === 0}
                                         >
@@ -772,7 +839,7 @@ export default function CardCreatorPage() {
                                         </motion.button>
                                         <motion.button
                                             onClick={() => setShowTemplates(!showTemplates)}
-                                            className="text-gold-400 text-sm hover:text-gold-300 transition-colors"
+                                            className="text-gold-400 text-xs sm:text-sm hover:text-gold-300 transition-colors bg-white/5 px-2 sm:px-3 py-1 rounded-lg whitespace-nowrap"
                                             whileHover={{ scale: 1.05 }}
                                         >
                                             {showTemplates ? t.create.closeGreetings : t.create.recommendedGreetings}
@@ -869,6 +936,20 @@ export default function CardCreatorPage() {
                                             {t.create.copyLink}
                                         </button>
                                     </div>
+
+                                    {/* 토스트 메시지 */}
+                                    <AnimatePresence>
+                                        {toastMessage && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="p-3 bg-green-500/20 border border-green-400/30 rounded-xl text-center"
+                                            >
+                                                <p className="text-green-400 text-sm">{toastMessage}</p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
 
                                     {/* 미리보기 링크 */}
                                     <Link
