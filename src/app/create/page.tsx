@@ -210,8 +210,9 @@ function CardPreview({
     );
 }
 
-export default function CardCreatorPage() {
+function CardCreatorContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // 인증 체크 상태
     const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -288,7 +289,6 @@ export default function CardCreatorPage() {
     }, []);
 
     // URL 쿼리에서 client 파라미터로 고객 이름 자동 채움
-    const searchParams = useSearchParams();
     useEffect(() => {
         const clientName = searchParams.get('client');
         if (clientName && !recipientName) {
@@ -1063,5 +1063,21 @@ export default function CardCreatorPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+// Suspense wrapper for useSearchParams
+export default function CardCreatorPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen flex items-center justify-center bg-ocean-900">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-white/60">Loading...</p>
+                </div>
+            </main>
+        }>
+            <CardCreatorContent />
+        </Suspense>
     );
 }
