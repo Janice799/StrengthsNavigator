@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import SeasonalEffect from '@/components/effects/SeasonalEffect';
 import seasonalTemplates from '@/config/seasonal_templates.json';
 import strengthDescriptions from '@/config/strength_descriptions.json';
 import strengthsI18n from '@/config/strengths_i18n.json';
 import i18n from '@/config/i18n.json';
 import { searchClients, saveSentCard, Client, getPublicCoachProfile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { LanguageToggle, useLanguage } from '@/hooks/useLanguage';
 
 // 34가지 강점 테마
@@ -210,6 +211,11 @@ function CardPreview({
 }
 
 export default function CardCreatorPage() {
+    const router = useRouter();
+
+    // 인증 체크 상태
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
+
     // 폼 상태
     const [recipientName, setRecipientName] = useState('');
     const [selectedStrengths, setSelectedStrengths] = useState<string[]>([]);
@@ -219,6 +225,29 @@ export default function CardCreatorPage() {
 
     // i18n 텍스트
     const t = (i18n as any)[language];
+
+    // 인증 체크 - 비로그인 시 로그인 페이지로 리다이렉트
+    useEffect(() => {
+        async function checkAuth() {
+            try {
+                if (!supabase) {
+                    router.replace('/login');
+                    return;
+                }
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    router.replace('/login');
+                    return;
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                router.replace('/login');
+            } finally {
+                setIsAuthChecking(false);
+            }
+        }
+        checkAuth();
+    }, [router]);
 
     // 계절 테마 상태
     const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
@@ -556,6 +585,18 @@ export default function CardCreatorPage() {
         setCoachMessage(template);
         setShowTemplates(false);
     };
+
+    // 인증 체크 중 로딩 표시
+    if (isAuthChecking) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-ocean-900">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-white/60">{language === 'en' ? 'Loading...' : '로딩 중...'}</p>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen relative overflow-hidden">
