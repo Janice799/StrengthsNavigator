@@ -487,11 +487,11 @@ function CardCreatorContent() {
 
         const shareData = {
             title: language === 'en'
-                ? `${recipientName}, you have a strength card! 💌`
-                : `${recipientName}님께 강점 카드가 도착했어요! 💌`,
+                ? `${recipientName}, you have a strength card!`
+                : `${recipientName}님께 강점 카드가 도착했어요!`,
             text: language === 'en'
-                ? 'Open to discover your strengths ✨'
-                : '열어서 확인해보세요 ✨',
+                ? 'Open to discover your strengths'
+                : '열어서 확인해보세요',
             url: cardUrl,
         };
 
