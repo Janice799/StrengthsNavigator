@@ -211,10 +211,10 @@ export async function getPublicCoachProfile() {
 
 
 // 카드 발송 관련 함수
-export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | null> {
+export async function saveSentCard(card: Partial<SentCard>): Promise<{ data: SentCard | null; error?: string }> {
     if (!supabase) {
         console.log('📝 로컬 모드: 카드 저장 시뮬레이션', card);
-        return { id: 'local-' + Date.now(), ...card } as SentCard;
+        return { data: { id: 'local-' + Date.now(), ...card } as SentCard };
     }
 
     // 현재 로그인한 사용자 가져오기
@@ -222,12 +222,12 @@ export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | 
 
     if (userError) {
         console.error('❌ 사용자 조회 에러:', userError.message);
-        return null;
+        return { data: null, error: `Auth error: ${userError.message}` };
     }
 
     if (!user) {
         console.error('❌ 로그인 필요: 사용자 없음');
-        return null;
+        return { data: null, error: 'Not logged in' };
     }
 
     console.log('✅ 사용자 확인됨:', user.id, user.email);
@@ -256,11 +256,11 @@ export async function saveSentCard(card: Partial<SentCard>): Promise<SentCard | 
             details: error.details,
             hint: error.hint
         });
-        return null;
+        return { data: null, error: `DB error: ${error.message}` };
     }
 
     console.log('✅ 카드 저장 성공:', data.id);
-    return data;
+    return { data };
 }
 
 export async function getRecentCards(limit: number = 20): Promise<SentCard[]> {

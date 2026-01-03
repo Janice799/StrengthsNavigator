@@ -401,7 +401,7 @@ export default function CardCreatorPage() {
 
         setIsSaving(true);
         try {
-            const savedCard = await saveSentCard({
+            const result = await saveSentCard({
                 client_id: selectedClient?.id,
                 client_name: recipientName,
                 season: selectedSeason || undefined,
@@ -414,17 +414,18 @@ export default function CardCreatorPage() {
             // 고유 URL 생성
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-            if (savedCard?.id && !savedCard.id.startsWith('local-')) {
+            if (result.data?.id && !result.data.id.startsWith('local-')) {
                 // DB 저장 성공 시 짧은 링크 생성
-                const url = `${baseUrl}/c/${savedCard.id}?lang=${language}`;
+                const url = `${baseUrl}/c/${result.data.id}?lang=${language}`;
                 setCardUrl(url);
-                console.log('✅ 카드 저장 성공:', savedCard.id);
+                console.log('✅ 카드 저장 성공:', result.data.id);
             } else {
-                // 저장 실패 시 알림 - 긴 URL 대신 에러 메시지 표시
-                console.error('⚠️ DB 저장 실패');
+                // 저장 실패 시 상세 에러 메시지 표시
+                console.error('⚠️ DB 저장 실패:', result.error);
+                const errorDetail = result.error || 'Unknown error';
                 alert(language === 'en'
-                    ? '⚠️ Card save failed. Please make sure you are logged in and try again.'
-                    : '⚠️ 카드 저장에 실패했습니다. 로그인 상태를 확인하고 다시 시도해주세요.');
+                    ? `⚠️ Card save failed: ${errorDetail}`
+                    : `⚠️ 카드 저장 실패: ${errorDetail}`);
                 setIsSaving(false);
                 return;
             }
