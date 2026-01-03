@@ -622,20 +622,20 @@ export default function CardCreatorPage() {
                                 <label className="block text-white/80 mb-3 font-medium">
                                     {language === 'en' ? '📝 Select Situation' : '📝 상황 선택'}
                                 </label>
-                                <div className="grid grid-cols-5 gap-2">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                     {SITUATIONS.map((situation) => (
                                         <motion.button
                                             key={situation.id}
                                             onClick={() => setSelectedSituation(situation.id)}
-                                            className={`p-3 rounded-xl border-2 transition-all ${selectedSituation === situation.id
+                                            className={`p-2 sm:p-3 rounded-xl border-2 transition-all ${selectedSituation === situation.id
                                                 ? 'border-gold-400 bg-gold-400/10'
                                                 : 'border-white/10 hover:border-white/30'
                                                 }`}
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                         >
-                                            <span className="text-xl block mb-1">{situation.emoji}</span>
-                                            <span className="text-white/80 text-xs">
+                                            <span className="text-lg sm:text-xl block mb-1">{situation.emoji}</span>
+                                            <span className="text-white/80 text-[10px] sm:text-xs leading-tight block">
                                                 {(i18n as any)[language].situations[situation.id]}
                                             </span>
                                         </motion.button>
